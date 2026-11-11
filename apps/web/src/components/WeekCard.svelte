@@ -59,6 +59,8 @@
             {:else}
               {rangeText(s.pace.min, s.pace.max)}{t.perKm}
             {/if}
+            {#if s.strides}<span class="extra">{t.stridesDetail(s.strides)}</span>{/if}
+            {#if s.racePaceKm && s.racePace}<span class="extra">{t.racePaceDetail(s.racePaceKm, formatPace(s.racePace))}{t.perKm}</span>{/if}
           </span>
         </label>
         <span class="km">{formatKm(s.km, lang)}<small> km</small></span>
@@ -162,6 +164,10 @@
   .detail {
     color: var(--ink-2);
     font-size: 0.95rem;
+  }
+  .extra {
+    display: block;
+    color: var(--ink);
   }
   .km {
     flex: none;

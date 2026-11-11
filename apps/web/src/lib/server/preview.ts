@@ -1,9 +1,17 @@
 // Samo strežnik. Generator se uvozi le tukaj, zato ga ni v paketu za brskalnik.
-import { generatePlan, utcDay, type PlanInput } from "@finisher/core";
+import { generatePlan, utcDay, type PlanInput, type RecentResult } from "@finisher/core";
 import { PREVIEW_WEEKS, type Preview, type PreviewRequest } from "../types";
 
 const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFinite(x);
 const isStr = (x: unknown): x is string => typeof x === "string" && x.length <= 10;
+
+/** Neobvezen nedavni rezultat: undefined, če ga ni, null, če je oblika napačna. */
+function parseRecent(x: unknown): RecentResult | undefined | null {
+  if (x === undefined || x === null) return undefined;
+  if (typeof x !== "object") return null;
+  const r = x as Record<string, unknown>;
+  return isNum(r.distanceKm) && isNum(r.minutes) ? { distanceKm: r.distanceKm, minutes: r.minutes } : null;
+}
 
 /** Preveri telo zahteve. Vrne null, če oblika ni prava. */
 export function parseRequest(body: unknown): PreviewRequest | null {
@@ -20,6 +28,8 @@ export function parseRequest(body: unknown): PreviewRequest | null {
   ) {
     return null;
   }
+  const recent = parseRecent(b.recent);
+  if (recent === null) return null;
   return {
     distanceKm: b.distanceKm,
     targetMinutes: b.targetMinutes,
@@ -29,6 +39,7 @@ export function parseRequest(body: unknown): PreviewRequest | null {
     today: b.today,
     lang: b.lang,
     track: b.track === true,
+    ...(recent ? { recent } : {}),
   };
 }
 
@@ -48,6 +59,7 @@ export function buildPreview(req: PreviewRequest, now = new Date()): Preview {
     today: effectiveToday(req.today, now),
     weeklyKm: req.weeklyKm,
     daysPerWeek: req.daysPerWeek,
+    ...(req.recent ? { recent: req.recent } : {}),
   };
   const r = generatePlan(input);
   if (!r.ok) return r;
@@ -59,5 +71,6 @@ export function buildPreview(req: PreviewRequest, now = new Date()): Preview {
     warnings: r.warnings,
     weeks: r.weeks.slice(0, PREVIEW_WEEKS),
     totals: r.weeks.map(({ number, kind, totalKm }) => ({ number, kind, totalKm })),
+    ...(r.predictedMinutes ? { predictedMinutes: r.predictedMinutes } : {}),
   };
 }

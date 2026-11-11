@@ -1,5 +1,5 @@
 // Oblika odgovora POST /api/preview. Samo tipi: odjemalec ne uvozi generatorja.
-import type { Lang, Paces, PlanError, Warning, Week } from "@finisher/core";
+import type { Lang, Paces, PlanError, RecentResult, Warning, Week } from "@finisher/core";
 
 export const PREVIEW_WEEKS = 2;
 
@@ -14,6 +14,8 @@ export interface PreviewRequest {
   lang: Lang;
   /** zabeleži korak lijaka (enkrat na obisk) */
   track?: boolean;
+  /** neobvezno: nedavni rezultat za oceno forme */
+  recent?: RecentResult;
 }
 
 export type Preview =
@@ -27,6 +29,7 @@ export type Preview =
       weeks: Week[];
       /** za graf obsega: samo vrsta in seštevek vsakega tedna */
       totals: Pick<Week, "number" | "kind" | "totalKm">[];
+      predictedMinutes?: number;
     }
   | { ok: false; error: PlanError | "NETWORK" };
 
@@ -37,6 +40,7 @@ export interface StoredInput {
   raceDate: string;
   weeklyKm: number;
   daysPerWeek: number;
+  recent?: RecentResult;
   fuel?: { carbsPerHour?: number; gelCarbs?: number; drinkPerHour?: number; firstGelMin?: number };
 }
 
@@ -51,6 +55,7 @@ export type FullPlanResponse =
       paces: Paces;
       warnings: Warning[];
       weeks: Week[];
+      predictedMinutes?: number;
       /** opravljene postavke: "w3s2" (teden 3, tek 2) ali "c4" (kontrolni seznam, točka 4) */
       done: string[];
     }

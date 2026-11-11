@@ -15,6 +15,13 @@ export interface PlanInput {
   today: string;
   weeklyKm: number;
   daysPerWeek: number;
+  /** Neobvezno: nedavni rezultat (tekma ali hiter tek na polno), iz katerega ocenimo trenutno formo. */
+  recent?: RecentResult;
+}
+
+export interface RecentResult {
+  distanceKm: number;
+  minutes: number;
 }
 
 /** Tempo v min/km. Pri enem samem tempu sta min in max enaka. */
@@ -33,6 +40,12 @@ export interface Session {
   reps?: number;
   /** intervali: dolžina ponovitve v metrih */
   repM?: number;
+  /** lahek tek: na koncu toliko pospeškov po 20 s */
+  strides?: number;
+  /** dolgi tek: zadnji toliko km v ciljnem tempu tekme */
+  racePaceKm?: number;
+  /** ciljni tempo tekme (min/km) za racePaceKm */
+  racePace?: number;
 }
 
 export interface Week {
@@ -53,7 +66,8 @@ export type WarningCode =
   | "HIGH_AVG_RUN" // povprečen tek nad 12 km
   | "TWO_DAYS_MARATHON"
   | "LOW_VOLUME_FOR_DAYS" // premalo km za izbrano število dni: v začetnih tednih je tekov manj
-  | "LONG_RUN_SHORT"; // najdaljši tek v načrtu je precej krajši od tekme (value: km)
+  | "LONG_RUN_SHORT" // najdaljši tek v načrtu je precej krajši od tekme (value: km)
+  | "GOAL_AMBITIOUS"; // cilj je opazno hitrejši od ocene iz nedavnega časa (value: ocenjene minute)
 
 export interface Warning {
   code: WarningCode;
@@ -78,6 +92,8 @@ export type PlanResult =
       paces: Paces;
       warnings: Warning[];
       weeks: Week[];
+      /** ocenjen čas tekme iz nedavnega rezultata (minute), če je bil podan */
+      predictedMinutes?: number;
     }
   | { ok: false; error: PlanError };
 
@@ -127,6 +143,17 @@ export const RULES = {
   raceWeekEasyMaxShare: 0.5,
   /** Opozorilo, če je najdaljši tek krajši od tega deleža razdalje tekme. */
   longRunVsRaceMin: 0.7,
+  /** Riegelov eksponent za oceno časa na drugi razdalji: T2 = T1 × (D2 / D1) ^ e. */
+  riegelExp: 1.06,
+  /** Cilj velja za zahtevnega, če je hitrejši od ocene za več kot ta delež. */
+  goalAmbitiousMargin: 0.03,
+  /** Pospeški (20 s) na lahkem teku v tednih brez tempa in intervalov ter v tednu tekme. */
+  strides: 4,
+  /** Zadnji km dolgega teka v tempu tekme: delež dolgega teka in zgornja meja po razdalji. */
+  racePaceShare: 0.2,
+  racePaceCap: { tenk: 3, half: 5, full: 8 } as Record<DistanceClass, number>,
+  /** Koliko zadnjih običajnih tednov gradnje ima dolgi tek s koncem v tempu tekme. */
+  racePaceLastBuildWeeks: 2,
 } as const;
 
 /** Vrstni red seans v tednu; dolgi tek je vedno zadnji. */
@@ -148,8 +175,22 @@ export { weeksUntil };
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 const fixed = (p: number): PaceRange => ({ min: p, max: p });
 
+/** Oceni čas na razdalji iz nedavnega rezultata (Riegel). */
+export function predictMinutes(recent: RecentResult, distanceKm: number): number {
+  return recent.minutes * Math.pow(distanceKm / recent.distanceKm, RULES.riegelExp);
+}
+
+function validRecent(r: RecentResult | undefined): boolean {
+  if (r === undefined) return true;
+  if (!Number.isFinite(r.distanceKm) || !Number.isFinite(r.minutes)) return false;
+  if (r.distanceKm < 1 || r.distanceKm > 50 || r.minutes <= 0) return false;
+  const pace = r.minutes / r.distanceKm;
+  return pace >= 2.5 && pace <= 15; // 2:30 do 15:00 min/km
+}
+
 function validInput(i: PlanInput): boolean {
   return (
+    validRecent(i.recent) &&
     Number.isFinite(i.distanceKm) &&
     i.distanceKm > 0 &&
     i.distanceKm <= 200 &&
@@ -163,14 +204,19 @@ function validInput(i: PlanInput): boolean {
   );
 }
 
-export function paces(distanceKm: number, targetMinutes: number): Paces {
+/**
+ * Tempi treningov. Če poznamo oceno forme, izhajajo iz počasnejšega od obeh (cilj ali ocena):
+ * prezahteven cilj tako ne pospeši treningov, ciljni tempo ostane le za tekmo in odseke v tempu tekme.
+ */
+export function paces(distanceKm: number, targetMinutes: number, predictedMinutes?: number): Paces {
   const dc = distanceClass(distanceKm);
   const race = targetMinutes / distanceKm;
+  const base = predictedMinutes ? Math.max(race, predictedMinutes / distanceKm) : race;
   return {
     race,
-    easy: { min: race * RULES.easyPace[0], max: race * RULES.easyPace[1] },
-    tempo: race * RULES.tempoPace[dc],
-    interval: race * RULES.intervalPace[dc],
+    easy: { min: base * RULES.easyPace[0], max: base * RULES.easyPace[1] },
+    tempo: base * RULES.tempoPace[dc],
+    interval: base * RULES.intervalPace[dc],
   };
 }
 
@@ -259,6 +305,38 @@ function raceWeek(distanceKm: number, peakKm: number, days: DaysPerWeek, p: Pace
 
 const sum = (s: Session[]) => s.reduce((a, x) => a + x.km, 0);
 
+/**
+ * Delo v tempu tekme, da telo tempo spozna tudi pri nizkem obsegu:
+ * - teden brez tempa in intervalov: pospeški na prvem lahkem teku, dolgi tek konča s km v tempu tekme,
+ * - zadnja dva običajna tedna gradnje: dolgi tek konča daljši odsek v tempu tekme,
+ * - teden tekme: pospeški na zadnjem lahkem teku pred tekmo.
+ * Lažji tedni in razbremenitev ostanejo brez tega.
+ */
+function addRacePaceWork(weeks: Week[], dc: DistanceClass, racePace: number): void {
+  const builds = weeks.filter((w) => w.kind === "build");
+  const lastBuilds = new Set(builds.slice(-RULES.racePaceLastBuildWeeks).map((w) => w.number));
+  for (const w of weeks) {
+    const easy = w.sessions.filter((s) => s.type === "easy");
+    if (w.kind === "race") {
+      const last = easy.at(-1);
+      if (last) last.strides = RULES.strides;
+      continue;
+    }
+    if (w.kind !== "build") continue;
+    const long = w.sessions.find((s) => s.type === "long");
+    const hasQuality = w.sessions.some((s) => s.type === "tempo" || s.type === "intervals");
+    if (!hasQuality && easy[0]) easy[0].strides = RULES.strides;
+    if (!long || long.km < 3) continue;
+    if (lastBuilds.has(w.number)) {
+      long.racePaceKm = clamp(Math.round(long.km * RULES.racePaceShare), 1, Math.min(RULES.racePaceCap[dc], long.km - 2));
+      long.racePace = racePace;
+    } else if (!hasQuality) {
+      long.racePaceKm = clamp(Math.round(long.km * RULES.racePaceShare), 1, 2);
+      long.racePace = racePace;
+    }
+  }
+}
+
 export function generatePlan(input: PlanInput): PlanResult {
   if (!validInput(input)) return { ok: false, error: "INVALID_INPUT" };
   const weeksToRace = weeksUntil(input.today, input.raceDate);
@@ -268,7 +346,8 @@ export function generatePlan(input: PlanInput): PlanResult {
   const days = input.daysPerWeek as DaysPerWeek;
   const dc = distanceClass(input.distanceKm);
   const cur = Math.max(input.weeklyKm, RULES.minWeeklyKm);
-  const p = paces(input.distanceKm, input.targetMinutes);
+  const predictedMinutes = input.recent ? predictMinutes(input.recent, input.distanceKm) : undefined;
+  const p = paces(input.distanceKm, input.targetMinutes, predictedMinutes);
   const targets = weeklyTargets(cur, weeksToRace, dc);
 
   const nonRace = targets.filter((t) => t.kind !== "race");
@@ -287,6 +366,7 @@ export function generatePlan(input: PlanInput): PlanResult {
     if (t.kind === "build") buildIndex++;
     return { number: k + 1, kind: t.kind, targetKm: t.km, totalKm: sum(sessions), sessions };
   });
+  addRacePaceWork(weeks, dc, p.race);
 
   const warnings: Warning[] = [];
   if (weeksToRace < RULES.shortPrepWeeks) warnings.push({ code: "SHORT_PREP" });
@@ -296,6 +376,10 @@ export function generatePlan(input: PlanInput): PlanResult {
   if (days === 2 && dc === "full") warnings.push({ code: "TWO_DAYS_MARATHON" });
   if (cur < RULES.lowVolumePerDayKm * days) warnings.push({ code: "LOW_VOLUME_FOR_DAYS" });
 
+  if (predictedMinutes && input.targetMinutes < predictedMinutes * (1 - RULES.goalAmbitiousMargin)) {
+    warnings.push({ code: "GOAL_AMBITIOUS", value: Math.round(predictedMinutes) });
+  }
+
   const longest = Math.max(0, ...weeks.flatMap((w) => w.sessions.filter((s) => s.type === "long").map((s) => s.km)));
   if (weeks.some((w) => w.kind !== "race") && longest < RULES.longRunVsRaceMin * input.distanceKm) {
     warnings.push({ code: "LONG_RUN_SHORT", value: longest });
@@ -304,5 +388,14 @@ export function generatePlan(input: PlanInput): PlanResult {
   const trainingTotals = weeks.filter((w) => w.kind !== "race").map((w) => w.totalKm);
   const peakKm = trainingTotals.length ? Math.max(...trainingTotals) : Math.round(peakTarget);
 
-  return { ok: true, distanceClass: dc, weeksToRace, peakKm, paces: p, warnings, weeks };
+  return {
+    ok: true,
+    distanceClass: dc,
+    weeksToRace,
+    peakKm,
+    paces: p,
+    warnings,
+    weeks,
+    ...(predictedMinutes ? { predictedMinutes } : {}),
+  };
 }

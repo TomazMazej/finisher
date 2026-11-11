@@ -1,4 +1,5 @@
 import type { Lang, SessionType, WarningCode, WeekKind, FuelWarning } from "@finisher/core";
+import { formatDuration } from "@finisher/core/format";
 
 type Dict = {
   tagline: string;
@@ -21,6 +22,14 @@ type Dict = {
   weeklyKmHint: string;
   days: string;
   daysHint: string;
+  recentLabel: string;
+  recentHint: string;
+  recentNone: string;
+  recentMin: string;
+  recentSec: string;
+  bibPredicted: (time: string) => string;
+  stridesDetail: (n: number) => string;
+  racePaceDetail: (km: number, pace: string) => string;
   bibPace: string;
   bibWeeks: (n: number) => string;
   bibNoDate: string;
@@ -107,6 +116,14 @@ export const T: Record<Lang, Dict> = {
     weeklyKmHint: "Koliko zdaj povprečno pretečeš na teden.",
     days: "Dni teka na teden",
     daysHint: "Dolgi tek je vedno zadnji tek v tednu.",
+    recentLabel: "Nedavni rezultat (neobvezno)",
+    recentHint: "Tekma ali tek na polno v zadnjih 6 tednih. Iz njega ocenimo tvojo formo in tempe treningov.",
+    recentNone: "Brez",
+    recentMin: "min",
+    recentSec: "s",
+    bibPredicted: (t) => `Ocena po tvoji formi: ${t}`,
+    stridesDetail: (n) => `na koncu ${n} × 20 s pospeškov`,
+    racePaceDetail: (km, pace) => `zadnji ${km === 1 ? "kilometer" : `${km} km`} v tempu tekme ${pace}`,
     bibPace: "na km",
     bibWeeks: (n) => `${slWeeks(n)} do štarta`,
     bibNoDate: "izberi datum",
@@ -152,12 +169,15 @@ export const T: Record<Lang, Dict> = {
       NETWORK: "Predogleda ni bilo mogoče naložiti. Preveri povezavo in poskusi znova.",
     },
     warnings: {
-      SHORT_PREP: () => "Do tekme je manj kot 4 tedne. Načrt je skrajšan. Ne poskušaj nadoknaditi zamujenega.",
+      SHORT_PREP: () =>
+        "Do tekme je manj kot 4 tedne. V tem času se forma ne izboljša veliko, zato načrt skrbi predvsem, da prideš na štart spočit. Prve kilometre teci malo počasneje od ciljnega tempa in ciljni čas vzemi kot zgornjo mejo, ne kot obveznost.",
       LONG_PREP: (v) => `Do tekme je več kot 20 tednov. Načrt pokrije zadnjih 20, prej (${slWeeks(v ?? 0)}) teci lahke teke.`,
       LOW_VOLUME_MARATHON: () => "Za maraton je manj kot 20 km na teden malo. Razmisli o daljši pripravi ali krajši razdalji.",
       HIGH_AVG_RUN: (v) => `Pri tem vnosu je povprečen tek okoli ${v} km. Če zdaj ne tečeš toliko, zmanjšaj km na teden.`,
       TWO_DAYS_MARATHON: () => "Dva teka na teden sta za maraton malo. Razmisli o več dneh ali krajši razdalji.",
       LOW_VOLUME_FOR_DAYS: () => "Za toliko dni je km na teden malo, zato ima načrt v začetnih tednih manj tekov. Dodaja jih, ko obseg raste.",
+      GOAL_AMBITIOUS: (v) =>
+        `Po tvojem nedavnem rezultatu je realno okoli ${formatDuration(v ?? 0)}. Ciljni čas je hitrejši, zato je zahteven. Tempi treningov izhajajo iz tvoje forme, ciljni tempo vadiš na koncu dolgih tekov.`,
       LONG_RUN_SHORT: (v) =>
         `Najdaljši tek v načrtu je ${v} km, kar je precej manj od tekme. Načrt obseg dviguje počasi, da se izogne poškodbam, zato je ciljni čas lahko prezahteven.`,
     },
@@ -215,6 +235,14 @@ export const T: Record<Lang, Dict> = {
     weeklyKmHint: "How much you run per week on average now.",
     days: "Run days per week",
     daysHint: "The long run is always the last run of the week.",
+    recentLabel: "Recent result (optional)",
+    recentHint: "A race or all-out run in the last 6 weeks. We use it to estimate your fitness and training paces.",
+    recentNone: "None",
+    recentMin: "min",
+    recentSec: "s",
+    bibPredicted: (t) => `Estimate from your fitness: ${t}`,
+    stridesDetail: (n) => `finish with ${n} × 20 s strides`,
+    racePaceDetail: (km, pace) => `last ${km === 1 ? "kilometre" : `${km} km`} at race pace ${pace}`,
     bibPace: "per km",
     bibWeeks: (n) => (n === 1 ? "1 week to the start" : `${n} weeks to the start`),
     bibNoDate: "pick a date",
@@ -260,12 +288,15 @@ export const T: Record<Lang, Dict> = {
       NETWORK: "The preview could not be loaded. Check your connection and try again.",
     },
     warnings: {
-      SHORT_PREP: () => "The race is less than 4 weeks away. The plan is shortened. Do not try to catch up.",
+      SHORT_PREP: () =>
+        "The race is less than 4 weeks away. Fitness does not change much in that time, so the plan mainly gets you to the start fresh. Run the first kilometres slightly slower than goal pace and treat the target time as a ceiling, not a must.",
       LONG_PREP: (v) => `The race is more than 20 weeks away. The plan covers the last 20; run easy for the ${v} ${v === 1 ? "week" : "weeks"} before.`,
       LOW_VOLUME_MARATHON: () => "Under 20 km a week is low for a marathon. Consider a longer build or a shorter race.",
       HIGH_AVG_RUN: (v) => `At this input your average run is about ${v} km. If you don't run that much now, lower your weekly km.`,
       TWO_DAYS_MARATHON: () => "Two runs a week is little for a marathon. Consider more days or a shorter race.",
       LOW_VOLUME_FOR_DAYS: () => "Your weekly km is low for this many days, so the first weeks have fewer runs. More are added as volume grows.",
+      GOAL_AMBITIOUS: (v) =>
+        `Based on your recent result, about ${formatDuration(v ?? 0)} is realistic. Your target is faster, so it is ambitious. Training paces come from your fitness; you practise goal pace at the end of long runs.`,
       LONG_RUN_SHORT: (v) =>
         `The longest run in the plan is ${v} km, well short of the race. The plan raises volume slowly to avoid injury, so your target time may be ambitious.`,
     },

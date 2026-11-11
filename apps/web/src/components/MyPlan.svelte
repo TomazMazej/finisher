@@ -142,6 +142,7 @@
           targetMinutes={data.input.targetMinutes}
           raceDate={data.input.raceDate}
           weeks={data.weeks.length - Math.max(0, currentWeek)}
+          predicted={data.predictedMinutes}
         />
         <div class="progress" aria-live="polite">
           <div class="bar" style:--p="{totalRuns ? (doneRuns / totalRuns) * 100 : 0}%"></div>

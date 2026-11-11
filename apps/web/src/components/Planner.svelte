@@ -45,6 +45,10 @@
   let raceDate = $state(inWeeks(16));
   let weeklyKm = $state(30);
   let days = $state(4);
+  // Neobvezen nedavni rezultat: razdalja "" pomeni brez.
+  let recentDist = $state<"" | "5" | "10" | "21.0975" | "42.195">("");
+  let recentMin = $state<number | null>(null);
+  let recentSec = $state<number | null>(null);
   let carbs = $state(60);
   let gelCarbs = $state(25);
   let drink = $state(15);
@@ -54,6 +58,10 @@
   const distanceKm = $derived(Number(dist));
   const targetMinutes = $derived((Number(hours) || 0) * 60 + (Number(minutes) || 0));
   const weeks = $derived(raceDate ? weeksUntil(today, raceDate) : null);
+  const recent = $derived.by(() => {
+    const m = (Number(recentMin) || 0) + (Number(recentSec) || 0) / 60;
+    return recentDist && m > 0 ? { distanceKm: Number(recentDist), minutes: m } : undefined;
+  });
 
   // Predogled izračuna strežnik. Ob spremembi vnosa počakamo 250 ms in prekinemo prejšnjo zahtevo.
   let plan = $state<Preview | null>(null);
@@ -68,6 +76,7 @@
       weeklyKm: Number(weeklyKm),
       daysPerWeek: Number(days),
       lang,
+      ...(recent ? { recent } : {}),
     };
     if (!raceDate) {
       plan = null;
@@ -153,7 +162,7 @@
       <section class="hero">
         <h1>{t.tagline}</h1>
         <p class="intro">{t.intro}</p>
-        <Bib {lang} {dist} {targetMinutes} {raceDate} {weeks} />
+        <Bib {lang} {dist} {targetMinutes} {raceDate} {weeks} predicted={plan?.ok ? plan.predictedMinutes : undefined} />
       </section>
 
       <form class="form" onsubmit={(e) => e.preventDefault()}>
@@ -212,6 +221,28 @@
               {/each}
             </div>
             <p class="hint" id="days-h">{t.daysHint}</p>
+          </div>
+
+          <div class="field">
+            <span class="label" id="recent-l">{t.recentLabel}</span>
+            <div class="recent" role="group" aria-labelledby="recent-l" aria-describedby="recent-h">
+              <select bind:value={recentDist} aria-label={t.distance}>
+                <option value="">{t.recentNone}</option>
+                <option value="5">5 km</option>
+                <option value="10">10 km</option>
+                <option value="21.0975">{t.distanceShort["21.0975"]}</option>
+                <option value="42.195">{t.distanceShort["42.195"]}</option>
+              </select>
+              <label>
+                <input type="number" inputmode="numeric" min="0" max="400" bind:value={recentMin} disabled={!recentDist} />
+                <span>{t.recentMin}</span>
+              </label>
+              <label>
+                <input type="number" inputmode="numeric" min="0" max="59" bind:value={recentSec} disabled={!recentDist} />
+                <span>{t.recentSec}</span>
+              </label>
+            </div>
+            <p class="hint" id="recent-h">{t.recentHint}</p>
           </div>
         </fieldset>
       </form>
@@ -430,6 +461,23 @@
     color: var(--ink-2);
   }
 
+  .recent {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .recent label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .recent span {
+    color: var(--ink-2);
+  }
+  input:disabled {
+    opacity: 0.5;
+  }
   .stepper {
     display: grid;
     grid-template-columns: 52px 1fr 52px;

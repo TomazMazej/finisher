@@ -10,7 +10,15 @@
     targetMinutes,
     raceDate,
     weeks,
-  }: { lang: Lang; dist: DistKey; targetMinutes: number; raceDate: string; weeks: number | null } = $props();
+    predicted = undefined,
+  }: {
+    lang: Lang;
+    dist: DistKey;
+    targetMinutes: number;
+    raceDate: string;
+    weeks: number | null;
+    predicted?: number;
+  } = $props();
 
   const t = $derived(T[lang]);
   const pace = $derived(targetMinutes > 0 ? formatPace(targetMinutes / Number(dist)) : "–");
@@ -41,6 +49,9 @@
     </div>
     {#if weeks !== null && weeks > 0}
       <p class="weeks">{t.bibWeeks(weeks)}</p>
+    {/if}
+    {#if predicted}
+      <p class="pred">{t.bibPredicted(formatDuration(predicted, true))}</p>
     {/if}
   </div>
 </figure>
@@ -129,6 +140,10 @@
   }
   .meta b {
     color: #14213d;
+  }
+  .pred {
+    margin: 0.3rem 0 0;
+    color: #4a5873;
   }
   .weeks {
     margin: 0.6rem 0 0;

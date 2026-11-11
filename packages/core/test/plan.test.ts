@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RULES, distanceClass, generatePlan, weeklyTargets, weeksUntil, type PlanInput } from "../src/plan";
+import { RULES, distanceClass, generatePlan, predictMinutes, weeklyTargets, weeksUntil, type PlanInput } from "../src/plan";
 
 const TODAY = "2026-11-11";
 
@@ -307,6 +307,78 @@ describe("posebni primeri", () => {
     expect(ok(input({ distanceKm: 10, targetMinutes: 50, weeklyKm: 25 })).warnings.map((w) => w.code)).not.toContain(
       "LONG_RUN_SHORT",
     );
+  });
+
+  it("ocena iz nedavnega časa (Riegel)", () => {
+    expect(predictMinutes({ distanceKm: 5, minutes: 28.5 }, 10)).toBeCloseTo(28.5 * Math.pow(2, 1.06), 6);
+    expect(predictMinutes({ distanceKm: 10, minutes: 60 }, 10)).toBe(60);
+  });
+
+  it("GOAL_AMBITIOUS samo, če je cilj opazno hitrejši od ocene", () => {
+    const codes = (recent: { distanceKm: number; minutes: number }) =>
+      ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 25, recent })).warnings.map((w) => w.code);
+    expect(codes({ distanceKm: 5, minutes: 30 })).toContain("GOAL_AMBITIOUS"); // ocena okoli 1:02:33
+    expect(codes({ distanceKm: 5, minutes: 28.5 })).not.toContain("GOAL_AMBITIOUS"); // ocena okoli 59:25
+    const r = ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 25, recent: { distanceKm: 5, minutes: 30 } }));
+    expect(r.warnings.find((w) => w.code === "GOAL_AMBITIOUS")!.value).toBe(Math.round(r.predictedMinutes!));
+  });
+
+  it("tempi treningov iz počasnejšega od cilja in ocene, tekma v ciljnem tempu", () => {
+    const base = ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 25 }));
+    const slow = ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 25, recent: { distanceKm: 5, minutes: 33 } }));
+    const fast = ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 25, recent: { distanceKm: 5, minutes: 25 } }));
+    expect(slow.paces.easy.min).toBeGreaterThan(base.paces.easy.min);
+    expect(slow.paces.tempo).toBeGreaterThan(base.paces.tempo);
+    expect(fast.paces.easy.min).toBe(base.paces.easy.min); // hitrejša forma ne pospeši treningov
+    for (const r of [base, slow, fast]) expect(r.paces.race).toBe(6);
+  });
+
+  it("neveljaven nedavni čas", () => {
+    for (const recent of [
+      { distanceKm: 0.5, minutes: 3 },
+      { distanceKm: 5, minutes: 5 }, // 1:00/km
+      { distanceKm: 5, minutes: 100 }, // 20:00/km
+      { distanceKm: 5, minutes: NaN },
+    ]) {
+      expect(generatePlan(input({ recent }))).toEqual({ ok: false, error: "INVALID_INPUT" });
+    }
+  });
+
+  it("delo v tempu tekme: pospeški in konec dolgega teka", () => {
+    for (const i of GRID) {
+      const r = ok(i);
+      const builds = r.weeks.filter((w) => w.kind === "build");
+      const last = new Set(builds.slice(-RULES.racePaceLastBuildWeeks).map((w) => w.number));
+      for (const w of r.weeks) {
+        const long = w.sessions.find((s) => s.type === "long");
+        const quality = w.sessions.some((s) => s.type === "tempo" || s.type === "intervals");
+        if (w.kind === "recovery" || w.kind === "taper") {
+          expect(w.sessions.some((s) => s.strides || s.racePaceKm)).toBe(false);
+        }
+        if (w.kind === "build" && !quality) {
+          expect(w.sessions.some((s) => s.type === "easy" && s.strides === RULES.strides) || !w.sessions.some((s) => s.type === "easy")).toBe(true);
+        }
+        if (long?.racePaceKm) {
+          expect(long.racePace).toBe(r.paces.race);
+          expect(long.racePaceKm).toBeGreaterThanOrEqual(1);
+          expect(long.racePaceKm).toBeLessThan(long.km);
+          expect(long.racePaceKm).toBeLessThanOrEqual(RULES.racePaceCap[r.distanceClass]);
+        }
+        if (w.kind === "build" && last.has(w.number) && long && long.km >= 3) expect(long.racePaceKm).toBeGreaterThan(0);
+      }
+      const rw = r.weeks.at(-1)!;
+      if (rw.sessions.some((s) => s.type === "easy")) expect(rw.sessions.filter((s) => s.strides).length).toBe(1);
+    }
+  });
+
+  it("tvoj primer: 10 km v 1:00 z 8 km na teden ima delo v ciljnem tempu", () => {
+    const r = ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 8, raceDate: addDays(TODAY, 18) }));
+    for (const w of r.weeks.filter((w) => w.kind === "build")) {
+      const long = w.sessions.find((s) => s.type === "long")!;
+      expect(long.racePaceKm).toBeGreaterThan(0);
+      expect(long.racePace).toBe(6);
+      expect(w.sessions.find((s) => s.type === "easy")!.strides).toBe(RULES.strides);
+    }
   });
 
   it("1 teden do tekme: samo teden tekme in opozorilo", () => {

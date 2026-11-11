@@ -1,0 +1,20 @@
+{
+  "name": "@finisher/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "echo \"(web: ni testov)\"",
+    "typecheck": "echo \"(web: preverja astro build)\""
+  },
+  "dependencies": {
+    "@finisher/core": "*",
+    "@astrojs/svelte": "^9.1.4",
+    "@fontsource/atkinson-hyperlegible": "^5.3.0",
+    "@fontsource/big-shoulders-display": "^5.3.0",
+    "astro": "^7.4.10",
+    "svelte": "^5.57.3"
+  }
+}

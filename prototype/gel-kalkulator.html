@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Finisher</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏃</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#eef1f5;--card:#ffffff;--ink:#101820;--mute:#52606d;--line:#d3dae2;--acc:#1b4fd8;--acc-ink:#ffffff;--soft:#e4ebfb;--warn:#8a4b00;--warnbg:#fff1d6;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161d;--card:#18212b;--ink:#eef2f6;--mute:#a3b0bd;--line:#2b3846;--acc:#6f9bff;--acc-ink:#0b1220;--soft:#1f2c42;--warn:#ffd28a;--warnbg:#3a2c10;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10161d;--card:#18212b;--ink:#eef2f6;--mute:#a3b0bd;--line:#2b3846;--acc:#6f9bff;--acc-ink:#0b1220;--soft:#1f2c42;--warn:#ffd28a;--warnbg:#3a2c10;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+h1{font:700 34px/1.05 "Barlow Condensed",Impact,system-ui,sans-serif;margin:0 0 4px;letter-spacing:.2px}
+header p{margin:0;color:var(--mute);max-width:46ch}
+.lang{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none}
+.lang button{border:0;background:var(--card);color:var(--ink);padding:8px 12px;font:600 14px Barlow,system-ui,sans-serif;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--acc);color:var(--acc-ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media (max-width:480px){.grid{grid-template-columns:1fr}}
+label{display:block;font-weight:600;font-size:14px;margin-bottom:4px}
+.hint{font-weight:400;color:var(--mute);font-size:13px}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:500 16px Barlow,system-ui,sans-serif}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:8px;align-items:center}
+.row span{color:var(--mute)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--soft);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font:700 30px/1 "Barlow Condensed",Impact,system-ui,sans-serif}
+.stat small{color:var(--mute)}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--mute);font-weight:600}
+td.n{font:700 20px "Barlow Condensed",Impact,system-ui,sans-serif}
+tr.fin td{font-weight:600;border-bottom:0}
+.tablewrap{overflow-x:auto}
+.msg{background:var(--warnbg);color:var(--warn);border-radius:8px;padding:10px 12px;margin:0 0 12px;font-size:14px}
+.btn{background:var(--acc);color:var(--acc-ink);border:0;border-radius:8px;padding:11px 16px;font:600 16px Barlow,system-ui,sans-serif;cursor:pointer;margin-top:14px}
+.fine{color:var(--mute);font-size:13px}
+.h2{font:700 26px/1.1 "Barlow Condensed",Impact,system-ui,sans-serif;margin:0 0 10px}
+.pt th,.pt td{padding:7px 6px;font-size:14px;white-space:nowrap}
+.pt tr.race td{font-weight:700;background:var(--soft)}
+.card ul{margin:0 0 8px;padding-left:20px}.card li{margin:5px 0}summary{cursor:pointer}details table td{padding:6px}
+@media print{
+  body{background:#fff;color:#000}.noprint{display:none!important}
+  .card{border:0;padding:0}.stat{background:#eee}th,td{border-color:#999}
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1 id="t-title"></h1>
+    <p id="t-sub"></p>
+  </div>
+  <div class="lang noprint" role="group" aria-label="Language">
+    <button id="b-sl" type="button">SL</button>
+    <button id="b-en" type="button">EN</button>
+  </div>
+</header>
+
+<section class="card noprint">
+  <h2 class="h2" id="t-ptitle"></h2>
+  <div class="grid">
+    <div><label for="dist" id="l-dist"></label><select id="dist"></select></div>
+    <div id="customWrap" hidden><label for="customKm" id="l-km"></label><input id="customKm" type="number" min="1" max="200" step="0.1" value="30"></div>
+    <div><label id="l-target"></label><div class="row"><input id="hh" type="number" min="0" max="12" step="1" value="4" aria-label="h"><span>h</span><input id="mm" type="number" min="0" max="59" step="1" value="0" aria-label="min"><span>min</span></div></div>
+    <div><label for="race" id="lp-race"></label><input id="race" type="date"></div>
+    <div><label for="wk" id="lp-wk"></label><input id="wk" type="number" min="5" max="150" step="1" value="30"></div>
+    <div><label for="days" id="lp-days"></label><select id="days"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div>
+  </div>
+</section>
+
+<section class="card" id="plan" aria-live="polite"></section>
+
+<section class="card noprint">
+  <h2 class="h2" id="t-fuel"></h2>
+  <div class="grid">
+    <div><label for="carbs" id="l-carbs"></label><input id="carbs" type="number" min="20" max="120" step="5" value="60"></div>
+    <div><label for="gelc" id="l-gelc"></label><input id="gelc" type="number" min="10" max="60" step="1" value="25"></div>
+    <div><label for="drink" id="l-drink"></label><input id="drink" type="number" min="0" max="90" step="5" value="15"></div>
+    <div><label for="start" id="l-start"></label><input id="start" type="number" min="0" max="90" step="5" value="30"></div>
+  </div>
+</section>
+
+<section class="card" id="result" aria-live="polite"></section>
+<section class="card" id="extras"></section>
+
+<p class="fine" id="t-disc"></p>
+</main>
+
+<script>
+var T = {
+  sl: {
+    title: "Finisher",
+    sub: "Vnesi tekmo in ciljni čas. Dobiš načrt treningov, tempo in urnik prehrane med tekmo.",
+    dist: "Razdalja", half: "Polmaraton (21,1 km)", full: "Maraton (42,2 km)", tenk: "10 km", custom: "Druga razdalja",
+    km: "Razdalja (km)", target: "Ciljni čas", carbs: "Ogljikovi hidrati (g/h)", gelc: "Ogljikovi hidrati v enem gelu (g)",
+    drink: "Iz pijače (g/h)", start: "Prvi gel po (min)",
+    pace: "Tempo", paceU: "min/km", gels: "Geli", gelsU: "skupaj", total: "Ogljikovi hidrati", totalU: "g skupaj",
+    plan: "Urnik", tTime: "Čas", tKm: "Kilometer", tWhat: "Vzemi", gel: "Gel", finish: "Cilj",
+    fromDrink: "Od tega iz pijače: ", fromGels: "iz gelov: ",
+    print: "Natisni urnik",
+    errTime: "Vnesi veljaven ciljni čas in razdaljo.",
+    noGels: "Pijača že pokrije cilj, gelov ni potrebnih.",
+    tight: "Razmik med geli je krajši od 15 minut. Preveri, ali želeni vnos ni previsok za tvoje telo.",
+    high: "Več kot 90 g/h zahteva vajo prebavil na treningih.",
+    disc: "Orodje je okvirna pomoč in ne zdravniški ali prehranski nasvet. Smernice za ogljikove hidrati se razlikujejo glede na vir in posameznika, običajno okoli 30 do 90 g/h pri dolgih tekih. Gorivo vedno preizkusi na treningih pred tekmo. Tekočin in soli ne računamo."
+  },
+  en: {
+    title: "Finisher",
+    sub: "Enter your race and target time. Get a training plan, paces and a race fuel schedule.",
+    dist: "Distance", half: "Half marathon (21.1 km)", full: "Marathon (42.2 km)", tenk: "10 km", custom: "Other distance",
+    km: "Distance (km)", target: "Target time", carbs: "Carbs (g/h)", gelc: "Carbs per gel (g)",
+    drink: "From drink (g/h)", start: "First gel after (min)",
+    pace: "Pace", paceU: "min/km", gels: "Gels", gelsU: "total", total: "Carbs", totalU: "g total",
+    plan: "Schedule", tTime: "Time", tKm: "Kilometre", tWhat: "Take", gel: "Gel", finish: "Finish",
+    fromDrink: "From drink: ", fromGels: "from gels: ",
+    print: "Print schedule",
+    errTime: "Enter a valid target time and distance.",
+    noGels: "Your drink already covers the target, no gels needed.",
+    tight: "Gels are less than 15 minutes apart. Check that the intake isn’t too high for you.",
+    high: "More than 90 g/h needs gut training in your long runs.",
+    disc: "This tool is a rough guide, not medical or nutrition advice. Carb guidelines vary by source and person, usually around 30 to 90 g/h for long runs. Always test your fuel in training before race day. Fluids and salt are not calculated."
+  }
+};
+Object.assign(T.sl, {
+  pTitle: "Načrt treningov", race: "Datum tekme", wk: "Trenutni tedenski km", days: "Dnevi teka na teden",
+  pNeed: "Izberi datum tekme, da dobiš načrt treningov.", pShort: "Do tekme je manj kot 4 tedne. Načrt je skrajšan in ne nadomesti prave priprave, zato ne poskušaj nadoknaditi izgubljenega.", pPast: "Datum tekme je že mimo ali je danes. Izberi poznejši datum.",
+  pLong: "Prikazanih je zadnjih 20 tednov. Pred tem gradi osnovo z lahkimi teki.",
+  pLow: "Za maraton je tedenski obseg pod 20 km nizek. Razmisli o daljši pripravi ali krajši razdalji.",
+  pWeek: "Teden", pTotal: "Skupaj km", cE: "Lahek", cT: "Tempo", cL: "Dolgi", cR: "Tekma",
+  pLeg: "Lahek in dolgi tek: pogovorni tempo, okoli ", pLeg2: " min/km. Tempo: ogrevanje, 20 do 35 min v enakomernem napornem tempu okoli ", pLeg3: " min/km, ohlajanje.",
+  pPeak: "Najvišji teden: ", pPrint: "Natisni načrt",
+  pDisc: "Načrt je splošen in poveča obseg za največ približno 10 % na teden, vsak četrti teden je lažji. Ob bolečini ali poškodbi se posvetuj z zdravnikom ali trenerjem."
+});
+Object.assign(T.en, {
+  pTitle: "Training plan", race: "Race date", wk: "Current weekly km", days: "Run days per week",
+  pNeed: "Pick a race date to get a training plan.", pShort: "The race is less than 4 weeks away. The plan is shortened and does not replace proper preparation, so do not try to catch up.", pPast: "The race date has passed or is today. Pick a later date.",
+  pLong: "Showing the last 20 weeks. Build a base with easy runs before that.",
+  pLow: "A weekly volume under 20 km is low for a marathon. Consider a longer build or a shorter distance.",
+  pWeek: "Week", pTotal: "Total km", cE: "Easy", cT: "Tempo", cL: "Long", cR: "Race",
+  pLeg: "Easy and long runs: conversational pace, around ", pLeg2: " min/km. Tempo: warm-up, 20 to 35 min at a steady hard effort around ", pLeg3: " min/km, cool-down.",
+  pPeak: "Peak week: ", pPrint: "Print plan",
+  pDisc: "The plan is generic and raises volume by about 10% per week at most, with every fourth week lighter. If you feel pain or get injured, talk to a doctor or coach."
+});
+Object.assign(T.sl, {
+  spl: "Vmesni časi (enakomeren tempo)", exT: "Vaje za moč, raztezanje in gibljivost",
+  ex: ["Počep s svojo težo: 2 × 12", "Izpadni korak: 2 × 10 na nogo", "Mostiček za zadnjico: 2 × 15", "Plank: 3 × 30 do 45 s", "Stoja na eni nogi: 2 × 30 s na nogo", "Dvigi na prste: 2 × 15", "Raztezanje po teku (30 s na stran): zadnja stran stegna, sprednja stran stegna, mečne mišice, upogibalke kolka, zadnjica"],
+  exN: "Moč 2 do 3-krat na teden po 15 minut, najbolje na lažje dneve. Če te kaj boli, ustavi in se posvetuj s strokovnjakom. To ni zdravniški nasvet.",
+  rdT: "Kontrolni seznam za tekmo",
+  rd: ["Dan pred tekmo: lahek tek ali počitek, ogljikovi hidrati, pripravi opremo in številko, preveri pot do štarta", "Nič novega na dan tekme: oprema, prehrana in geli naj bodo preizkušeni na treningih", "Zjutraj: zajtrk, ki si ga že preizkusil, nekaj tekočine, vazelin na občutljiva mesta, geli v žepu", "Na tekmi: začni malo počasneje od ciljnega tempa, gel po urniku, pij na okrepčevalnicah", "Zadnja četrtina: drži tempo in ga prilagodi počutju"]
+});
+Object.assign(T.en, {
+  spl: "Splits (even pace)", exT: "Strength, stretching and mobility",
+  ex: ["Bodyweight squat: 2 × 12", "Lunge: 2 × 10 per leg", "Glute bridge: 2 × 15", "Plank: 3 × 30 to 45 s", "Single-leg stand: 2 × 30 s per leg", "Calf raises: 2 × 15", "Stretch after runs (30 s per side): hamstrings, quads, calves, hip flexors, glutes"],
+  exN: "Strength 2 to 3 times a week for 15 minutes, ideally on easier days. If something hurts, stop and talk to a professional. This is not medical advice.",
+  rdT: "Race checklist",
+  rd: ["Day before: easy run or rest, carbs, lay out kit and bib, check the route to the start", "Nothing new on race day: kit, food and gels should all be tested in training", "Morning: a breakfast you have already tried, some fluids, anti-chafe balm, gels in your pocket", "In the race: start slightly slower than goal pace, gel by the schedule, drink at aid stations", "Last quarter: hold your pace and adjust to how you feel"]
+});
+Object.assign(T.sl, {
+  cI: "Intervali", pAvg: "Povprečen tek pri tvojem vnosu je okoli ", pAvg2: " km. Če trenutno ne tečeš toliko, zmanjšaj tedenske km, ker načrt gradi od tega obsega.", p2: "Za maraton sta 2 teka na teden malo. Razmisli o več dneh teka ali krajši razdalji.", yr: "Tvoji podatki", fuel: "Prehrana med tekmo", pS: "Razdalja in ciljni čas veljata tudi za kalkulator prehrane zgoraj.",
+  pInt: "Intervali: ogrevanje 10 min, ponovitve po 800 m v tempu okoli ", pInt2: " min/km, vmes 2 min lahkega teka, ohlajanje. Tempo intervalov je ocenjen iz ciljnega časa."
+});
+Object.assign(T.en, {
+  cI: "Intervals", pAvg: "The average run at your input is about ", pAvg2: " km. If that is more than you run now, lower your weekly km, because the plan builds from this volume.", p2: "Two runs a week is little for a marathon. Consider more run days or a shorter distance.", yr: "Your details", fuel: "Race nutrition", pS: "Distance and target time are shared with the fuel calculator above.",
+  pInt: "Intervals: 10 min warm-up, 800 m repeats at about ", pInt2: " min/km, 2 min easy jog between, cool-down. Interval pace is estimated from your target time."
+});
+var lang = "sl";
+var saved = null;
+try { saved = localStorage.getItem("lang"); } catch (e) {}
+if (saved === "en" || saved === "sl") lang = saved;
+else if (navigator.language && navigator.language.slice(0, 2) === "en") lang = "en";
+
+function t(k) { return T[lang][k]; }
+function $(id) { return document.getElementById(id); }
+function hm(min) { var s = Math.round(min), h = Math.floor(s / 60), m = s % 60; return h + ":" + String(m).padStart(2, "0"); }
+function pc(p) { var m = Math.floor(p), s = Math.round((p - m) * 60); if (s === 60) { m++; s = 0; } return m + ":" + String(s).padStart(2, "0"); }
+function num(id) { var v = parseFloat($(id).value); return isNaN(v) ? 0 : v; }
+function km1(x) { return (Math.round(x * 10) / 10).toString().replace(".", lang === "sl" ? "," : "."); }
+
+function labels() {
+  $("t-title").textContent = t("title");
+  $("t-sub").textContent = t("sub");
+  $("t-disc").textContent = t("disc");
+  $("l-dist").textContent = t("dist");
+  $("l-km").textContent = t("km");
+  $("l-target").textContent = t("target");
+  $("l-carbs").textContent = t("carbs");
+  $("l-gelc").textContent = t("gelc");
+  $("l-drink").textContent = t("drink");
+  $("l-start").textContent = t("start");
+  $("t-ptitle").textContent = t("yr");
+  $("t-fuel").textContent = t("fuel");
+  $("lp-race").textContent = t("race");
+  $("lp-wk").textContent = t("wk");
+  $("lp-days").textContent = t("days");
+  extras();
+  document.documentElement.lang = lang;
+  document.title = t("title");
+  $("b-sl").setAttribute("aria-pressed", lang === "sl");
+  $("b-en").setAttribute("aria-pressed", lang === "en");
+  var sel = $("dist"), cur = sel.value || "42.195";
+  sel.innerHTML = "";
+  [["10", "tenk"], ["21.0975", "half"], ["42.195", "full"], ["custom", "custom"]].forEach(function (o) {
+    var op = document.createElement("option");
+    op.value = o[0]; op.textContent = t(o[1]); sel.appendChild(op);
+  });
+  sel.value = cur;
+}
+
+function calc() {
+  plan();
+  $("customWrap").hidden = $("dist").value !== "custom";
+  var dist = $("dist").value === "custom" ? num("customKm") : parseFloat($("dist").value);
+  var total = num("hh") * 60 + num("mm");
+  var out = $("result");
+  if (!(dist > 0) || !(total > 0)) { out.innerHTML = '<p class="msg">' + t("errTime") + "</p>"; return; }
+  var pace = total / dist;
+  var carbs = num("carbs"), gelc = num("gelc"), drink = num("drink"), start = num("start");
+  var fromGelH = Math.max(0, carbs - drink);
+  var msgs = [];
+  var rows = [], interval = 0;
+  if (fromGelH <= 0 || gelc <= 0) {
+    msgs.push(t("noGels"));
+  } else {
+    interval = gelc / fromGelH * 60;
+    for (var tm = start; tm <= total - 15; tm += interval) rows.push(tm);
+    if (interval < 15) msgs.push(t("tight"));
+  }
+  if (carbs > 90) msgs.push(t("high"));
+  var gelTotal = rows.length * gelc;
+  var drinkTotal = drink * Math.max(0, total - start) / 60;
+  var html = "";
+  msgs.forEach(function (m) { html += '<p class="msg">' + m + "</p>"; });
+  html += '<div class="stats">' +
+    '<div class="stat"><b>' + pc(pace) + "</b><small>" + t("pace") + " " + t("paceU") + "</small></div>" +
+    '<div class="stat"><b>' + rows.length + "</b><small>" + t("gels") + " " + t("gelsU") + "</small></div>" +
+    '<div class="stat"><b>' + Math.round(gelTotal + drinkTotal) + "</b><small>" + t("total") + " " + t("totalU") + "</small></div></div>";
+  html += '<div class="tablewrap"><table><thead><tr><th>#</th><th>' + t("tTime") + "</th><th>" + t("tKm") + "</th><th>" + t("tWhat") + "</th></tr></thead><tbody>";
+  rows.forEach(function (tm, i) {
+    html += "<tr><td class=\"n\">" + (i + 1) + "</td><td>" + hm(tm) + "</td><td>" + km1(tm / pace) + "</td><td>" + t("gel") + " (" + gelc + " g)</td></tr>";
+  });
+  html += '<tr class="fin"><td></td><td>' + hm(total) + "</td><td>" + km1(dist) + "</td><td>" + t("finish") + "</td></tr></tbody></table></div>";
+  html += '<p class="fine">' + t("fromDrink") + Math.round(drinkTotal) + " g, " + t("fromGels") + Math.round(gelTotal) + " g.</p>";
+  var hms = function (m) { var s = Math.round(m * 60), h = Math.floor(s / 3600), mi = Math.floor(s % 3600 / 60); return h + ":" + String(mi).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+  var sp = "";
+  for (var s = 5; s < dist; s += 5) sp += "<tr><td>" + s + " km</td><td>" + hms(s * pace) + "</td></tr>";
+  sp += '<tr class="fin"><td>' + km1(dist) + " km</td><td>" + hms(total) + "</td></tr>";
+  html += "<details><summary>" + t("spl") + "</summary><table><tbody>" + sp + "</tbody></table></details>";
+  html += '<button class="btn noprint" type="button" onclick="window.print()">' + t("print") + "</button>";
+  out.innerHTML = html;
+}
+
+function extras() {
+  function ul(a) { return "<ul>" + a.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ul>"; }
+  $("extras").innerHTML = '<details><summary class="h2">' + t("exT") + "</summary>" + ul(t("ex")) + '<p class="fine">' + t("exN") + "</p></details>" +
+    '<details style="margin-top:12px"><summary class="h2">' + t("rdT") + "</summary>" + ul(t("rd")) + "</details>";
+}
+
+function plan() {
+  var el = $("plan"), rd = $("race").value;
+  if (!rd) { el.innerHTML = '<p class="msg">' + t("pNeed") + "</p>"; return; }
+  var dist = $("dist").value === "custom" ? num("customKm") : parseFloat($("dist").value);
+  var tot = num("hh") * 60 + num("mm");
+  if (!(dist > 0) || !(tot > 0)) { el.innerHTML = '<p class="msg">' + t("errTime") + "</p>"; return; }
+  var weeks = Math.ceil((new Date(rd + "T12:00:00") - new Date()) / 6048e5);
+  if (weeks < 1) { el.innerHTML = '<p class="msg">' + t("pPast") + "</p>"; return; }
+  var d = parseInt($("days").value, 10), cur = Math.max(num("wk"), 5);
+  var n = Math.min(weeks, 20), taper = Math.min(dist >= 30 ? 2 : 1, n), build = n - taper;
+  var cap = dist >= 30 ? 70 : dist >= 15 ? 55 : 40, lcap = dist >= 30 ? 32 : dist >= 15 ? 20 : 14;
+  var pace = tot / dist, easyP = pace * 1.2, tempP = pace * (dist >= 30 ? 0.94 : dist >= 15 ? 0.97 : 1.06);
+  var intP = pace * (dist >= 30 ? 0.88 : dist >= 15 ? 0.93 : 0.97), easyS = pc(pace * 1.12) + "–" + pc(pace * 1.28);
+  var W = [], base = cur;
+  for (var i = 0; i < build; i++) {
+    if (i > 0 && i % 4 !== 3) base = Math.min(base * 1.1, cap);
+    W.push(i % 4 === 3 ? base * 0.8 : base);
+  }
+  var peak = base;
+  (taper === 2 ? [0.75, 0.5] : [0.5]).forEach(function (f) { W.push(peak * f); });
+  var TY = { 2: ["T", "L"], 3: ["T", "E", "L"], 4: ["E", "T", "E", "L"], 5: ["E", "T", "E", "E", "L"], 6: ["E", "T", "E", "E", "E", "L"] }[d];
+  var nE = TY.filter(function (x) { return x === "E"; }).length;
+  var names = { E: t("cE"), T: t("cT"), L: t("cL") };
+  var html = "";
+  if (weeks < 4) html += '<p class="msg">' + t("pShort") + "</p>";
+  if (dist >= 30 && cur < 20) html += '<p class="msg">' + t("pLow") + "</p>";
+  if (cur / d > 12) html += '<p class="msg">' + t("pAvg") + Math.round(cur / d) + t("pAvg2") + "</p>";
+  if (d === 2 && dist >= 30) html += '<p class="msg">' + t("p2") + "</p>";
+  if (weeks > 20) html += '<p class="msg">' + t("pLong") + "</p>";
+  html += '<h2 class="h2">' + t("pTitle") + '</h2><p class="fine">' + t("pPeak") + Math.round(peak) + " km</p>";
+  html += '<div class="tablewrap"><table class="pt"><thead><tr><th>' + t("pWeek") + "</th><th>" + t("pTotal") + "</th>";
+  for (var c = 1; c <= d; c++) html += "<th>" + c + "</th>";
+  html += "</tr></thead><tbody>";
+  W.forEach(function (w, k) {
+    var race = k === W.length - 1, cells = [], sum = 0;
+    if (race) {
+      var e = Math.max(3, Math.round(peak * 0.12));
+      TY.forEach(function (ty, j) {
+        if (j === d - 1) { cells.push(t("cR") + " " + km1(dist) + " km<br><small>" + pc(pace) + "/km</small>"); sum += dist; }
+        else { cells.push(t("cE") + " " + e + " km<br><small>" + easyS + "/km</small>"); sum += e; }
+      });
+    } else {
+      var wt = TY.reduce(function (a, ty) { return a + (ty === "L" ? 1.6 : ty === "T" ? 1 : 0.9); }, 0);
+      var l = Math.min(lcap, w * 0.5, w * 1.6 / wt), rest = w - l, wr = wt - 1.6;
+      var q = Math.round(rest / wr), ez = Math.max(3, Math.round(rest * 0.9 / wr));
+      l = Math.round(l);
+      var iv = k % 2 === 1 && k < build;
+      TY.forEach(function (ty) {
+        var v = ty === "T" ? q : ty === "L" ? l : ez, ps = ty === "T" ? pc(tempP) : easyS;
+        if (ty === "T" && iv) {
+          cells.push(t("cI") + " " + Math.max(3, Math.min(6, Math.round(q * 0.4 / 0.8))) + " × 800 m (" + q + " km)<br><small>" + pc(intP) + "/km</small>");
+        } else {
+          cells.push(names[ty] + " " + v + " km<br><small>" + (ty === "T" ? Math.max(3, Math.round(v * 0.5)) + " km @ " : "") + ps + "/km</small>");
+        }
+        sum += v;
+      });
+    }
+    html += '<tr' + (race ? ' class="race"' : "") + "><td>" + (n - W.length + k + 1) + "</td><td>" + Math.round(sum) + "</td>";
+    cells.forEach(function (x) { html += "<td>" + x + "</td>"; });
+    html += "</tr>";
+  });
+  html += "</tbody></table></div>";
+  html += '<p class="fine">' + t("pLeg") + pc(pace * 1.12) + "–" + pc(pace * 1.28) + t("pLeg2") + pc(tempP) + t("pLeg3") + "</p>";
+  html += '<p class="fine">' + t("pInt") + pc(intP) + t("pInt2") + "</p>";
+  html += '<p class="fine">' + t("pDisc") + "</p>";
+  html += '<button class="btn noprint" type="button" onclick="window.print()">' + t("pPrint") + "</button>";
+  el.innerHTML = html;
+}
+
+function setLang(l) {
+  lang = l;
+  try { localStorage.setItem("lang", l); } catch (e) {}
+  labels(); calc();
+}
+$("b-sl").onclick = function () { setLang("sl"); };
+$("b-en").onclick = function () { setLang("en"); };
+["dist", "customKm", "hh", "mm", "carbs", "gelc", "drink", "start", "race", "wk", "days"].forEach(function (id) {
+  $(id).addEventListener("input", calc);
+});
+labels(); calc();
+</script>
+</body>
+</html>

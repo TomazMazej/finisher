@@ -1,0 +1,119 @@
+
+/* Tokeni. Startna številka je papir in ostane svetla tudi v temni temi. */
+:root {
+  --mist: #e8edf2;
+  --surface: #f7f9fb;
+  --ink: #14213d;
+  --ink-2: #4a5873;
+  --line: #c9d2dd;
+  --bib-blue: #2346d8;
+  --bib-blue-ink: #ffffff;
+  --paper: #ffffff;
+  --paper-ink: #14213d;
+  --amber: #8a4a00;
+  --amber-bg: #fdf0d9;
+
+  /* vrste treningov: barva je dodatek k oznaki, ne edina informacija */
+  --s-easy: #8da3c4;
+  --s-tempo: #2346d8;
+  --s-intervals: #7a3fe0;
+  --s-long: #14213d;
+  --s-race: #d98a00;
+
+  --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --text: "Atkinson Hyperlegible", system-ui, sans-serif;
+
+  --r-bib: 6px;
+  --r-ui: 10px;
+  --step: 1.25;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --mist: #0f1726;
+  --surface: #172238;
+  --ink: #e9eef6;
+  --ink-2: #a6b3c9;
+  --line: #2c3a55;
+  --bib-blue: #7d98ff;
+  --bib-blue-ink: #0f1726;
+  --amber: #ffd08a;
+  --amber-bg: #3a2a0e;
+  --s-easy: #6f86a9;
+  --s-tempo: #7d98ff;
+  --s-intervals: #b48cff;
+  --s-long: #e9eef6;
+  --s-race: #ffb43c;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --mist: #0f1726;
+    --surface: #172238;
+    --ink: #e9eef6;
+    --ink-2: #a6b3c9;
+    --line: #2c3a55;
+    --bib-blue: #7d98ff;
+    --bib-blue-ink: #0f1726;
+    --amber: #ffd08a;
+    --amber-bg: #3a2a0e;
+    --s-easy: #6f86a9;
+    --s-tempo: #7d98ff;
+    --s-intervals: #b48cff;
+    --s-long: #e9eef6;
+    --s-race: #ffb43c;
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--mist);
+  color: var(--ink);
+  font: 400 1.0625rem/1.55 var(--text);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--bib-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

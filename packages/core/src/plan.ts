@@ -52,7 +52,8 @@ export type WarningCode =
   | "LOW_VOLUME_MARATHON" // maraton in pod 20 km na teden
   | "HIGH_AVG_RUN" // povprečen tek nad 12 km
   | "TWO_DAYS_MARATHON"
-  | "LOW_VOLUME_FOR_DAYS"; // premalo km za izbrano število dni
+  | "LOW_VOLUME_FOR_DAYS" // premalo km za izbrano število dni: v začetnih tednih je tekov manj
+  | "LONG_RUN_SHORT"; // najdaljši tek v načrtu je precej krajši od tekme (value: km)
 
 export interface Warning {
   code: WarningCode;
@@ -92,6 +93,8 @@ export const RULES = {
   /** Zgornja meja za tempo ali intervalni trening (km skupaj z ogrevanjem). */
   qualityCap: { tenk: 12, half: 16, full: 20 } as Record<DistanceClass, number>,
   longShareMax: 0.5,
+  /** Pri samo dveh tekih na teden sme dolgi tek pokriti več tedna, sicer bi bila enako dolga. */
+  longShareMaxTwoRuns: 0.6,
   /**
    * Dolgi tek raste s tedenskim obsegom do zgornje meje:
    * najmanj longCap × (obseg / weeklyCap) ^ longRampExp.
@@ -111,8 +114,19 @@ export const RULES = {
   raceWeekEasyShare: 0.12,
   highAvgRunKm: 12,
   lowVolumeMarathonKm: 20,
-  /** Opozorilo, če je obseg nižji od tega števila km na dan teka. */
+  /**
+   * Povprečen tek v tednu je vsaj toliko km. Pri nizkem obsegu je tekov manj, kot jih je uporabnik izbral
+   * (a vsaj 2), namesto da bi se obseg napihnil z minimalnimi teki.
+   */
   lowVolumePerDayKm: 4,
+  /** Tempo ali intervali šele od te dolžine (ogrevanje in ohlajanje); krajši je lahek tek. */
+  minQualityKm: 5,
+  /** Ogrevanje + ohlajanje pri tempu in intervalih (km). */
+  warmCoolKm: 2,
+  /** Lahki teki v tednu tekme skupaj največ toliko deleža najvišjega tedna. */
+  raceWeekEasyMaxShare: 0.5,
+  /** Opozorilo, če je najdaljši tek krajši od tega deleža razdalje tekme. */
+  longRunVsRaceMin: 0.7,
 } as const;
 
 /** Vrstni red seans v tednu; dolgi tek je vedno zadnji. */
@@ -186,6 +200,11 @@ export function weeklyTargets(
   return out;
 }
 
+/** Koliko tekov v tednu: izbrano število dni, pri nizkem obsegu manj (vsaj 2). */
+export function runsForWeek(targetKm: number, days: DaysPerWeek): DaysPerWeek {
+  return clamp(Math.floor(targetKm / RULES.lowVolumePerDayKm), 2, days) as DaysPerWeek;
+}
+
 function trainingWeek(
   targetKm: number,
   days: DaysPerWeek,
@@ -194,13 +213,15 @@ function trainingWeek(
   intervals: boolean,
   recovery: boolean,
 ): Session[] {
-  const layout = LAYOUT[days];
+  const runs = runsForWeek(targetKm, days);
+  const layout = LAYOUT[runs];
   const W = RULES.weights;
   const wt = layout.reduce((a, ty) => a + W[ty], 0);
   const wr = wt - W.long;
   const proportional = (targetKm * W.long) / wt;
   const ramp = RULES.longCap[dc] * Math.pow(Math.min(1, targetKm / RULES.weeklyCap[dc]), RULES.longRampExp);
-  const rawLong = Math.min(RULES.longCap[dc], targetKm * RULES.longShareMax, Math.max(proportional, ramp));
+  const share = runs === 2 ? RULES.longShareMaxTwoRuns : RULES.longShareMax;
+  const rawLong = Math.min(RULES.longCap[dc], targetKm * share, Math.max(proportional, ramp));
   const rest = targetKm - rawLong;
   const long = Math.max(RULES.minRunKm, Math.round(rawLong));
   // Nobena seansa ne sme biti daljša od dolgega teka.
@@ -209,22 +230,29 @@ function trainingWeek(
 
   return layout.map((ty): Session => {
     if (ty === "long") return { type: "long", km: long, pace: p.easy };
-    if (ty === "easy") return { type: "easy", km: easy, pace: p.easy };
+    // Prekratek trening za ogrevanje, del v tempu in ohlajanje je lahek tek.
+    if (ty === "easy" || quality < RULES.minQualityKm) return { type: "easy", km: ty === "easy" ? easy : quality, pace: p.easy };
+    const workKm = quality - RULES.warmCoolKm;
     if (intervals) {
       const [lo, hi] = RULES.intervalReps;
-      const reps = clamp(Math.round((quality * 0.4) / (RULES.intervalRepM / 1000)), lo, hi);
+      const repKm = RULES.intervalRepM / 1000;
+      // Ponovitve + 2 min lahkega teka vmes (okoli 0,3 km) morajo skupaj z ogrevanjem in ohlajanjem pasti v trening.
+      const fit = Math.floor((workKm + 0.3) / (repKm + 0.3));
+      const reps = clamp(Math.round((quality * 0.4) / repKm), lo, Math.max(lo, Math.min(hi, fit)));
       return { type: "intervals", km: quality, pace: fixed(p.interval), reps, repM: RULES.intervalRepM };
     }
-    const share = recovery ? RULES.tempoShare.recovery : RULES.tempoShare.normal;
-    const qualityKm = clamp(Math.round(quality * share), Math.min(RULES.minRunKm, quality), quality);
+    const tshare = recovery ? RULES.tempoShare.recovery : RULES.tempoShare.normal;
+    const qualityKm = clamp(Math.round(quality * tshare), 1, workKm);
     return { type: "tempo", km: quality, pace: fixed(p.tempo), qualityKm };
   });
 }
 
 function raceWeek(distanceKm: number, peakKm: number, days: DaysPerWeek, p: Paces): Session[] {
   const easyKm = Math.max(RULES.minRunKm, Math.round(peakKm * RULES.raceWeekEasyShare));
+  // Lahki teki pred tekmo skupaj ne presežejo polovice najvišjega tedna.
+  const count = clamp(Math.floor((peakKm * RULES.raceWeekEasyMaxShare) / easyKm), 0, days - 1);
   const s: Session[] = [];
-  for (let i = 0; i < days - 1; i++) s.push({ type: "easy", km: easyKm, pace: p.easy });
+  for (let i = 0; i < count; i++) s.push({ type: "easy", km: easyKm, pace: p.easy });
   s.push({ type: "race", km: distanceKm, pace: fixed(p.race) });
   return s;
 }
@@ -267,6 +295,11 @@ export function generatePlan(input: PlanInput): PlanResult {
   if (cur / days > RULES.highAvgRunKm) warnings.push({ code: "HIGH_AVG_RUN", value: Math.round(cur / days) });
   if (days === 2 && dc === "full") warnings.push({ code: "TWO_DAYS_MARATHON" });
   if (cur < RULES.lowVolumePerDayKm * days) warnings.push({ code: "LOW_VOLUME_FOR_DAYS" });
+
+  const longest = Math.max(0, ...weeks.flatMap((w) => w.sessions.filter((s) => s.type === "long").map((s) => s.km)));
+  if (weeks.some((w) => w.kind !== "race") && longest < RULES.longRunVsRaceMin * input.distanceKm) {
+    warnings.push({ code: "LONG_RUN_SHORT", value: longest });
+  }
 
   const trainingTotals = weeks.filter((w) => w.kind !== "race").map((w) => w.totalKm);
   const peakKm = trainingTotals.length ? Math.max(...trainingTotals) : Math.round(peakTarget);

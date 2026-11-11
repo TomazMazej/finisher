@@ -4,14 +4,15 @@
   "type": "module",
   "scripts": {
     "types": "wrangler types",
-    "dev": "wrangler types && astro dev",
+    "dev": "node scripts/dev-vars.mjs && wrangler types && astro dev",
     "build": "wrangler types && astro build",
     "preview": "astro preview",
     "deploy": "npm run build && wrangler deploy",
     "db:migrate:local": "wrangler d1 migrations apply finisher --local",
     "db:migrate:remote": "wrangler d1 migrations apply finisher --remote",
     "test": "echo \"(web: ni testov)\"",
-    "typecheck": "echo \"(web: preverja astro build)\""
+    "typecheck": "echo \"(web: preverja astro build)\"",
+    "order:test": "node scripts/test-order.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.7",

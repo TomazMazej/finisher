@@ -58,6 +58,23 @@ type Dict = {
   fuelWarnings: Record<FuelWarning, string>;
   disclaimer: string;
   locale: string;
+  my: {
+    title: string;
+    loading: string;
+    progress: (done: number, total: number) => string;
+    thisWeek: string;
+    weeksTitle: string;
+    weekRange: (from: string, to: string) => string;
+    markDone: (what: string) => string;
+    saveFailed: string;
+    splits: string;
+    strength: string;
+    stretch: string;
+    exercisesTitle: string;
+    checklistTitle: string;
+    keepLink: string;
+    errors: Record<"INVALID_TOKEN" | "NOT_PAID" | "NOT_FOUND" | "PLAN_ERROR" | "NETWORK", string>;
+  };
 };
 
 /** Slovenska množina: 1 teden, 2 tedna, 3 in 4 tedni, 5+ tednov (po zadnjih dveh mestih). */
@@ -140,7 +157,9 @@ export const T: Record<Lang, Dict> = {
       LOW_VOLUME_MARATHON: () => "Za maraton je manj kot 20 km na teden malo. Razmisli o daljši pripravi ali krajši razdalji.",
       HIGH_AVG_RUN: (v) => `Pri tem vnosu je povprečen tek okoli ${v} km. Če zdaj ne tečeš toliko, zmanjšaj km na teden.`,
       TWO_DAYS_MARATHON: () => "Dva teka na teden sta za maraton malo. Razmisli o več dneh ali krajši razdalji.",
-      LOW_VOLUME_FOR_DAYS: () => "Za toliko dni je km na teden malo, zato so nekateri teki daljši od tvojega povprečja.",
+      LOW_VOLUME_FOR_DAYS: () => "Za toliko dni je km na teden malo, zato ima načrt v začetnih tednih manj tekov. Dodaja jih, ko obseg raste.",
+      LONG_RUN_SHORT: (v) =>
+        `Najdaljši tek v načrtu je ${v} km, kar je precej manj od tekme. Načrt obseg dviguje počasi, da se izogne poškodbam, zato je ciljni čas lahko prezahteven.`,
     },
     fuelWarnings: {
       NO_GELS: "Pijača že pokrije cilj, gelov ne potrebuješ.",
@@ -150,6 +169,29 @@ export const T: Record<Lang, Dict> = {
     disclaimer:
       "Načrt je splošen in ni zdravniški ali prehranski nasvet. Obseg raste največ okoli 10 % na teden. Gele in hrano preizkusi na treningih. Ob bolečini ali poškodbi se posvetuj z zdravnikom.",
     locale: "sl-SI",
+    my: {
+      title: "Moj načrt",
+      loading: "Nalagam načrt …",
+      progress: (d, n) => `${d} od ${n} treningov opravljenih`,
+      thisWeek: "Ta teden",
+      weeksTitle: "Treningi po tednih",
+      weekRange: (a, b) => `${a} do ${b}`,
+      markDone: (w) => `Označi kot opravljeno: ${w}`,
+      saveFailed: "Kljukice ni bilo mogoče shraniti. Preveri povezavo in poskusi znova.",
+      splits: "Vmesni časi",
+      strength: "Moč",
+      stretch: "Raztezanje po teku",
+      exercisesTitle: "Vaje za moč in gibljivost",
+      checklistTitle: "Kontrolni seznam za tekmo",
+      keepLink: "Shrani to povezavo. Z njo prideš do načrta in kljukic na kateri koli napravi.",
+      errors: {
+        INVALID_TOKEN: "Povezava ni veljavna. Preveri, ali si jo kopiral v celoti iz emaila.",
+        NOT_PAID: "Plačilo za ta načrt še ni potrjeno. Poskusi znova čez nekaj minut.",
+        NOT_FOUND: "Načrta s to povezavo ni. Preveri povezavo iz emaila.",
+        PLAN_ERROR: "Načrta ni bilo mogoče pripraviti. Piši nam, pa ga uredimo.",
+        NETWORK: "Načrta ni bilo mogoče naložiti. Preveri povezavo in poskusi znova.",
+      },
+    },
   },
   en: {
     tagline: "A plan for your race",
@@ -223,7 +265,9 @@ export const T: Record<Lang, Dict> = {
       LOW_VOLUME_MARATHON: () => "Under 20 km a week is low for a marathon. Consider a longer build or a shorter race.",
       HIGH_AVG_RUN: (v) => `At this input your average run is about ${v} km. If you don't run that much now, lower your weekly km.`,
       TWO_DAYS_MARATHON: () => "Two runs a week is little for a marathon. Consider more days or a shorter race.",
-      LOW_VOLUME_FOR_DAYS: () => "Your weekly km is low for this many days, so some runs are longer than your average.",
+      LOW_VOLUME_FOR_DAYS: () => "Your weekly km is low for this many days, so the first weeks have fewer runs. More are added as volume grows.",
+      LONG_RUN_SHORT: (v) =>
+        `The longest run in the plan is ${v} km, well short of the race. The plan raises volume slowly to avoid injury, so your target time may be ambitious.`,
     },
     fuelWarnings: {
       NO_GELS: "Your drink already covers the target, no gels needed.",
@@ -233,5 +277,28 @@ export const T: Record<Lang, Dict> = {
     disclaimer:
       "The plan is generic and is not medical or nutrition advice. Volume grows by about 10% a week at most. Test gels and food in training. If you feel pain or get injured, see a doctor.",
     locale: "en-GB",
+    my: {
+      title: "My plan",
+      loading: "Loading your plan …",
+      progress: (d, n) => `${d} of ${n} runs done`,
+      thisWeek: "This week",
+      weeksTitle: "Runs week by week",
+      weekRange: (a, b) => `${a} to ${b}`,
+      markDone: (w) => `Mark as done: ${w}`,
+      saveFailed: "The tick could not be saved. Check your connection and try again.",
+      splits: "Splits",
+      strength: "Strength",
+      stretch: "Stretch after running",
+      exercisesTitle: "Strength and mobility",
+      checklistTitle: "Race checklist",
+      keepLink: "Keep this link. It opens your plan and ticks on any device.",
+      errors: {
+        INVALID_TOKEN: "This link is not valid. Check that you copied all of it from the email.",
+        NOT_PAID: "Payment for this plan is not confirmed yet. Try again in a few minutes.",
+        NOT_FOUND: "There is no plan for this link. Check the link in your email.",
+        PLAN_ERROR: "The plan could not be prepared. Write to us and we will fix it.",
+        NETWORK: "The plan could not be loaded. Check your connection and try again.",
+      },
+    },
   },
 };

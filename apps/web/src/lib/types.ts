@@ -29,3 +29,32 @@ export type Preview =
       totals: Pick<Week, "number" | "kind" | "totalKm">[];
     }
   | { ok: false; error: PlanError | "NETWORK" };
+
+/** Vhod, shranjen ob naročilu. Datum začetka načrta je plan_start v tabeli orders. */
+export interface StoredInput {
+  distanceKm: number;
+  targetMinutes: number;
+  raceDate: string;
+  weeklyKm: number;
+  daysPerWeek: number;
+  fuel?: { carbsPerHour?: number; gelCarbs?: number; drinkPerHour?: number; firstGelMin?: number };
+}
+
+export type FullPlanResponse =
+  | {
+      ok: true;
+      lang: Lang;
+      planStart: string;
+      input: StoredInput;
+      weeksToRace: number;
+      peakKm: number;
+      paces: Paces;
+      warnings: Warning[];
+      weeks: Week[];
+      /** opravljene postavke: "w3s2" (teden 3, tek 2) ali "c4" (kontrolni seznam, točka 4) */
+      done: string[];
+    }
+  | { ok: false; error: "INVALID_TOKEN" | "NOT_PAID" | "NOT_FOUND" | "PLAN_ERROR" | "NETWORK" };
+
+/** Oblika ključa za kljukico. */
+export const PROGRESS_ITEM = /^(w\d{1,2}s\d|c\d{1,2})$/;

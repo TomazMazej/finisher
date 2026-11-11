@@ -1,0 +1,33 @@
+---
+import "@fontsource/big-shoulders-display/700";
+import "@fontsource/big-shoulders-display/800";
+import "@fontsource/atkinson-hyperlegible/400";
+import "@fontsource/atkinson-hyperlegible/700";
+import "../styles/global.css";
+import MyPlan from "../components/MyPlan.svelte";
+---
+
+<!doctype html>
+<html lang="sl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Moj načrt | Finisher</title>
+    <!-- Stran je zasebna: ne v iskalnike, žeton v povezavi ne uhaja drugam. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#e8edf2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1726" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      try {
+        const t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <MyPlan client:only="svelte" />
+    <noscript>Za prikaz načrta vklopi JavaScript.</noscript>
+  </body>
+</html>

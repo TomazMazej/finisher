@@ -91,7 +91,11 @@ describe("invariante čez vse kombinacije", () => {
     for (const i of GRID) {
       const r = ok(i);
       expect(r.weeks.length).toBe(Math.min(r.weeksToRace, RULES.maxWeeksShown));
-      for (const w of r.weeks) expect(w.sessions.length).toBe(i.daysPerWeek);
+      for (const w of r.weeks) {
+        // Pri nizkem obsegu je tekov manj od izbranih dni, a vsaj 2 (teden tekme: vsaj tekma).
+        expect(w.sessions.length).toBeLessThanOrEqual(i.daysPerWeek);
+        expect(w.sessions.length).toBeGreaterThanOrEqual(w.kind === "race" ? 1 : 2);
+      }
     }
   });
 
@@ -117,14 +121,15 @@ describe("invariante čez vse kombinacije", () => {
     }
   });
 
-  it("dolgi tek spoštuje zgornjo mejo in 50 % tedna", () => {
+  it("dolgi tek spoštuje zgornjo mejo in 50 % tedna (60 % pri dveh tekih)", () => {
     for (const i of GRID) {
       const r = ok(i);
       for (const w of r.weeks) {
         if (w.kind === "race") continue;
         const long = w.sessions.find((s) => s.type === "long")!.km;
         expect(long).toBeLessThanOrEqual(RULES.longCap[r.distanceClass]);
-        expect(long).toBeLessThanOrEqual(Math.max(RULES.minRunKm, Math.round(w.targetKm * RULES.longShareMax)));
+        const share = w.sessions.length === 2 ? RULES.longShareMaxTwoRuns : RULES.longShareMax;
+        expect(long).toBeLessThanOrEqual(Math.max(RULES.minRunKm, Math.round(w.targetKm * share)));
       }
     }
   });
@@ -192,6 +197,8 @@ describe("invariante čez vse kombinacije", () => {
       const easyKm = raceWeek.totalKm - i.distanceKm;
       expect(easyKm).toBeLessThan(Math.max(peak, RULES.minRunKm * i.daysPerWeek));
       if (r.distanceClass === "full" && r.weeks.length >= 3) expect(r.weeks.at(-2)!.kind).toBe("taper");
+      // Lahki teki v tednu tekme skupaj največ pol najvišjega tedna.
+      expect(easyKm).toBeLessThanOrEqual(Math.max(...build.map((w) => w.totalKm)) * RULES.raceWeekEasyMaxShare + 0.5);
     }
   });
 
@@ -203,10 +210,15 @@ describe("invariante čez vse kombinacije", () => {
         for (const s of w.sessions) {
           if (s.type === "tempo" || s.type === "intervals") {
             expect(s.km).toBeLessThanOrEqual(RULES.qualityCap[r.distanceClass]);
+            expect(s.km).toBeGreaterThanOrEqual(RULES.minQualityKm);
           }
           if (s.type === "tempo") {
             expect(s.qualityKm).toBeGreaterThan(0);
-            expect(s.qualityKm!).toBeLessThanOrEqual(s.km);
+            expect(s.qualityKm!).toBeLessThanOrEqual(s.km - RULES.warmCoolKm);
+          }
+          if (s.type === "intervals") {
+            // ponovitve + odmori + ogrevanje in ohlajanje se ne smejo raztegniti čez dolžino treninga
+            expect(s.reps! * 0.8 + (s.reps! - 1) * 0.3 + RULES.warmCoolKm).toBeLessThanOrEqual(s.km + 0.01);
           }
           if (s.type === "intervals") {
             expect(w.kind).toBe("build");
@@ -270,6 +282,31 @@ describe("posebni primeri", () => {
       .map((w) => (w.sessions.some((s) => s.type === "intervals") ? "I" : "T"))
       .join("");
     expect(builds).toBe("TITITITITIT");
+  });
+
+  it("regresija: 10 km v 1:00, 8 km na teden, 18 dni do tekme", () => {
+    for (const daysPerWeek of DAYS) {
+      const r = ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 8, daysPerWeek, raceDate: addDays(TODAY, 18) }));
+      const training = r.weeks.filter((w) => w.kind !== "race");
+      for (const w of training) {
+        // obseg se ne napihne zaradi minimalnih tekov
+        expect(w.totalKm).toBeLessThanOrEqual(w.targetKm + 1);
+        // pri tako nizkem obsegu ni tempa ali intervalov
+        expect(w.sessions.every((s) => s.type === "easy" || s.type === "long")).toBe(true);
+        const long = w.sessions.find((s) => s.type === "long")!.km;
+        for (const s of w.sessions) if (s.type !== "long") expect(s.km).toBeLessThan(long);
+      }
+      const raceWeek = r.weeks.at(-1)!;
+      expect(raceWeek.totalKm - 10).toBeLessThanOrEqual(5);
+      expect(r.warnings.map((w) => w.code)).toContain("LONG_RUN_SHORT");
+    }
+  });
+
+  it("dovolj obsega: brez opozorila LONG_RUN_SHORT", () => {
+    expect(ok(input()).warnings.map((w) => w.code)).not.toContain("LONG_RUN_SHORT");
+    expect(ok(input({ distanceKm: 10, targetMinutes: 50, weeklyKm: 25 })).warnings.map((w) => w.code)).not.toContain(
+      "LONG_RUN_SHORT",
+    );
   });
 
   it("1 teden do tekme: samo teden tekme in opozorilo", () => {

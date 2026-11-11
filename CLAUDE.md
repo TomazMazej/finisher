@@ -85,8 +85,12 @@ Datoteka `prototype/gel-kalkulator.html`: ena HTML stran, vanilla JS, vse v brsk
 - Datum "danes" pošlje odjemalec, strežnik ga sprejme le, če je največ en dan od njegovega.
 - Lijak: tabela `events` (brez IP in brez ID obiskovalca), predogled se zabeleži enkrat na obisk.
 - Gumb za nakup je onemogočen, dokler ni plačil.
+- Nizek obseg (11. 11., po uporabnikovem primeru 10 km v 1:00 z 8 km na teden): število tekov v tednu je `runsForWeek` = floor(obseg / 4), med 2 in izbranimi dnevi, da se obseg ne napihne z minimalnimi teki. Tempo in intervali šele od 5 km (`minQualityKm`), krajši je lahek tek. Pri dveh tekih sme dolgi tek pokriti 60 % tedna. Lahki teki v tednu tekme skupaj največ 50 % najvišjega tedna. Opozorilo `LONG_RUN_SHORT`, če je najdaljši tek pod 70 % razdalje tekme. Trenutni obseg je izhodišče: načrt od njega raste največ 10 % na teden.
+- Stran "moj načrt" (`/moj-nacrt?t=<žeton>`, `components/MyPlan.svelte`): žeton `<orderId>.<HMAC-SHA256>` s skrivnim ključem `TOKEN_SECRET` (`src/lib/server/token.ts`). `GET /api/plan` vrne cel načrt samo za plačana naročila, izračunan od `plan_start` (tedni se ne premikajo). `PUT /api/progress` shrani kljukico (`w3s2` ali `c4`). Tedni so poravnani na dan tekme, trenutni teden je označen. Vsebina vaj in kontrolnega seznama je v `src/lib/content.ts` (vrstni red kontrolnega seznama po objavi ne spreminjaj, ključi so indeksi).
+- Lokalni ključ: `scripts/dev-vars.mjs` ustvari `apps/web/.dev.vars` (ni v gitu). Testno naročilo: `npm run order:test -w @finisher/web` (lokalno) ali `TOKEN_SECRET=... npm run order:test -w @finisher/web -- --remote`.
 - Razvoj: uporabnikov MacBook (late 2015) ima macOS 12.6, workerd zahteva 13.5+, zato lokalni `astro dev` in lokalni D1 ne tečeta na Macu. Razvoj teče v GitHub Codespaces (`.devcontainer/devcontainer.json`), objava prek Cloudflare Workers Builds iz GitHuba.
 - Produkcijska baza ima migracijo `0001_init.sql` že uveljavljeno (zapis v `d1_migrations`).
+- Produkcija: https://finisher.raceplan.workers.dev (poddomena računa `raceplan`). Workers Builds (GitHub TomazMazej/finisher, veja main): root `apps/web`, build `cd ../.. && npm ci --legacy-peer-deps && npm run build -w @finisher/web`, deploy `npx wrangler deploy`, preview buildi izklopljeni. Vsak push na main objavi stran.
 
 ## 3. Zahteve za pravo različico
 

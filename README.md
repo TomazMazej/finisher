@@ -26,6 +26,14 @@ npm run build -w @finisher/web # produkcijska gradnja v apps/web/dist
 
 `--legacy-peer-deps` je potreben, ker npm sicer pade pri peer odvisnostih Vitesta.
 
+### Codespaces
+
+Na macOS pod 13.5 Cloudflare runtime ne teče, zato razvijamo v GitHub Codespaces: na GitHubu Code → Codespaces → Create codespace on main. Okolje (`.devcontainer`) samo namesti odvisnosti in pripravi lokalno bazo, nato `npm run dev -w @finisher/web`.
+
+## Objava
+
+Cloudflare Workers Builds ob vsakem pushu na `main` zgradi in objavi stran. Migracije produkcijske baze: `npm run db:migrate:remote -w @finisher/web` (potrebuje `CLOUDFLARE_API_TOKEN`).
+
 ## Generator
 
 Vsa pravila (rast obsega, lažji tedni, razbremenitev, zgornje meje, tempi) so v `RULES` v `packages/core/src/plan.ts`. Testi preverijo invariante čez več kot 1.000 kombinacij vhodov: dolgi tek je vedno najdaljši, obseg raste največ 10 % na teden, pred tekmo je razbremenitev, načrt deluje za 2 do 6 dni in za 1 do 26 tednov do tekme.

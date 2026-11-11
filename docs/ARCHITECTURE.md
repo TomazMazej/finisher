@@ -5,7 +5,7 @@
 ```
 packages/core     generator načrta, prehrana, vmesni časi (čist TypeScript, brez DOM, testi)
 apps/web          Astro: statične strani + otoki (Svelte) za obrazec in predogled
-apps/web/functions  strežniške funkcije (Cloudflare Pages Functions / Workers)
+apps/web/src/pages/api  strežniške funkcije (Cloudflare Workers)
 ```
 
 ## Odločitve
@@ -14,7 +14,7 @@ apps/web/functions  strežniške funkcije (Cloudflare Pages Functions / Workers)
 |---|---|---|
 | Jezik | TypeScript povsod | En jezik za odjemalca in strežnik, isti `core` v obeh, tipi ujamejo napake v pravilih. |
 | Spletna stran | Astro + Svelte otoki | Večina strani je statična (pristajalna, pravne, strani za tekme za iskalnike). Astro pošlje skoraj nič JS, interaktiven je le obrazec. Hitro na telefonu, dobro za SEO. |
-| Gostovanje in funkcije | Cloudflare Pages + Functions | Statika in funkcije na enem mestu, brezplačni nivo zadošča za začetek, brez strežnika za vzdrževanje. |
+| Gostovanje in funkcije | Cloudflare Workers s statičnimi datotekami | Statika in funkcije na enem mestu, brezplačni nivo dovoli komercialno rabo, brez strežnika za vzdrževanje. Cloudflare za nove projekte priporoča Workers namesto Pages. |
 | Baza | Cloudflare D1 (SQLite) | Naročila, vhodni podatki, kljukice "moj načrt", referenčne kode. Majhen obseg podatkov. |
 | PDF | pdf-lib v brskalniku, na strani "moj načrt" | Brezplačni Workers imajo 10 ms CPU na zahtevo, kar za PDF s pisavami ne zadošča. Stran "moj načrt" dobi cel načrt šele po plačilu, zato je ustvarjanje PDF pri kupcu varno. |
 | Plačila | Merchant of record (Lemon Squeezy ali Paddle) | Uredi DDV po državi kupca. Brez mesečne naročnine, le provizija na prodajo. |

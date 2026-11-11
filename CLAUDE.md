@@ -79,8 +79,14 @@ Datoteka `prototype/gel-kalkulator.html`: ena HTML stran, vanilla JS, vse v brsk
 - Opozorila in napake so kode (npr. `SHORT_PREP`), besedila pridejo iz prevodov v vmesniku.
 - `apps/web`: Astro 7 + Svelte 5, ena stran (`src/pages/index.astro`, `components/Planner.svelte`). Zagon: `npm run dev -w @finisher/web`. Prevodi v `src/lib/i18n.ts` (slovenska množina prek `sl()`).
 - Oblikovanje: osrednji element je papirnata startna številka, ki se izpolnjuje ob vnosu (ostane bela tudi v temni temi). Pisavi Big Shoulders Display (naslovi, številke) in Atkinson Hyperlegible (besedilo), gostovani lokalno prek @fontsource. Barve: megla #E8EDF2, črnilo #14213D, modra #2346D8, vrste treningov imajo svojo barvo poleg oznake.
-- ZAČASNO: `src/lib/preview.ts` računa predogled v brskalniku. Ko bo `/api/preview`, ga zamenja fetch, da generator ne gre v paket za brskalnik.
+- Gostovanje: Cloudflare Workers s statičnimi datotekami (`@astrojs/cloudflare` v14, `apps/web/wrangler.jsonc`). Strani so statične, `/api/*` teče na zahtevo (`export const prerender = false`). Vezave dobiš z `import { env } from "cloudflare:workers"`.
+- Baza: D1 `finisher` (WEUR), vezava `DB`, migracije v `apps/web/migrations`. Lokalno: `npm run db:migrate:local -w @finisher/web`, produkcija: `db:migrate:remote`.
+- `POST /api/preview` (`src/pages/api/preview.ts`, logika v `src/lib/server/preview.ts`): vrne prva dva tedna in seštevke tednov. Generator je samo v strežniškem paketu, odjemalec uvaža le `@finisher/core/fuel`, `/format`, `/dates` in tipe. Preverba: v `dist/client` ni nizov `longRampExp` ali `qualityCap`.
+- Datum "danes" pošlje odjemalec, strežnik ga sprejme le, če je največ en dan od njegovega.
+- Lijak: tabela `events` (brez IP in brez ID obiskovalca), predogled se zabeleži enkrat na obisk.
 - Gumb za nakup je onemogočen, dokler ni plačil.
+- Razvoj: uporabnikov MacBook (late 2015) ima macOS 12.6, workerd zahteva 13.5+, zato lokalni `astro dev` in lokalni D1 ne tečeta na Macu. Razvoj teče v GitHub Codespaces (`.devcontainer/devcontainer.json`), objava prek Cloudflare Workers Builds iz GitHuba.
+- Produkcijska baza ima migracijo `0001_init.sql` že uveljavljeno (zapis v `d1_migrations`).
 
 ## 3. Zahteve za pravo različico
 

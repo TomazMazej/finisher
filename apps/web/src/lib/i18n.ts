@@ -53,7 +53,7 @@ type Dict = {
   buyItems: string[];
   buyCta: string;
   buyNote: string;
-  errors: Record<"INVALID_INPUT" | "RACE_PASSED" | "NO_DATE", string>;
+  errors: Record<"INVALID_INPUT" | "RACE_PASSED" | "NO_DATE" | "NETWORK", string>;
   warnings: Record<WarningCode, (v?: number) => string>;
   fuelWarnings: Record<FuelWarning, string>;
   disclaimer: string;
@@ -132,6 +132,7 @@ export const T: Record<Lang, Dict> = {
       INVALID_INPUT: "Preveri ciljni čas, km na teden in datum tekme.",
       RACE_PASSED: "Datum tekme je danes ali že mimo. Izberi poznejši datum.",
       NO_DATE: "Izberi datum tekme.",
+      NETWORK: "Predogleda ni bilo mogoče naložiti. Preveri povezavo in poskusi znova.",
     },
     warnings: {
       SHORT_PREP: () => "Do tekme je manj kot 4 tedne. Načrt je skrajšan. Ne poskušaj nadoknaditi zamujenega.",
@@ -214,6 +215,7 @@ export const T: Record<Lang, Dict> = {
       INVALID_INPUT: "Check your target time, weekly km and race date.",
       RACE_PASSED: "The race date is today or has passed. Pick a later date.",
       NO_DATE: "Pick a race date.",
+      NETWORK: "The preview could not be loaded. Check your connection and try again.",
     },
     warnings: {
       SHORT_PREP: () => "The race is less than 4 weeks away. The plan is shortened. Do not try to catch up.",

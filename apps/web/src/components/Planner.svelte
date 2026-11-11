@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { fuelPlan, weeksUntil, type Lang } from "@finisher/core";
+  import { fuelPlan } from "@finisher/core/fuel";
+  import { weeksUntil } from "@finisher/core/dates";
+  import type { Lang } from "@finisher/core";
   import { T } from "../lib/i18n";
-  import { preview, PREVIEW_WEEKS } from "../lib/preview";
+  import { fetchPreview } from "../lib/api";
+  import { PREVIEW_WEEKS, type Preview } from "../lib/types";
   import Bib from "./Bib.svelte";
   import WeekCard from "./WeekCard.svelte";
   import VolumeBars from "./VolumeBars.svelte";
@@ -52,11 +55,43 @@
   const targetMinutes = $derived((Number(hours) || 0) * 60 + (Number(minutes) || 0));
   const weeks = $derived(raceDate ? weeksUntil(today, raceDate) : null);
 
-  const plan = $derived(
-    raceDate
-      ? preview({ distanceKm, targetMinutes, raceDate, today, weeklyKm: Number(weeklyKm), daysPerWeek: Number(days) })
-      : null,
-  );
+  // Predogled izračuna strežnik. Ob spremembi vnosa počakamo 250 ms in prekinemo prejšnjo zahtevo.
+  let plan = $state<Preview | null>(null);
+  let loading = $state(false);
+  let tracked = false;
+  $effect(() => {
+    const req = {
+      distanceKm,
+      targetMinutes,
+      raceDate,
+      today,
+      weeklyKm: Number(weeklyKm),
+      daysPerWeek: Number(days),
+      lang,
+    };
+    if (!raceDate) {
+      plan = null;
+      return;
+    }
+    const ctrl = new AbortController();
+    loading = true;
+    const timer = setTimeout(async () => {
+      try {
+        const track = !tracked;
+        const res = await fetchPreview({ ...req, track }, ctrl.signal);
+        if (track && res.ok) tracked = true;
+        plan = res;
+      } catch {
+        /* prekinjeno */
+      } finally {
+        if (!ctrl.signal.aborted) loading = false;
+      }
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  });
   const fuel = $derived(
     fuelPlan({
       distanceKm,
@@ -182,9 +217,11 @@
       </form>
     </div>
 
-    <div class="right" aria-live="polite">
-      {#if !plan}
+    <div class="right" aria-live="polite" aria-busy={loading}>
+      {#if !raceDate}
         <p class="msg">{t.errors.NO_DATE}</p>
+      {:else if !plan}
+        <p class="loading">…</p>
       {:else if !plan.ok}
         <p class="msg">{t.errors[plan.error]}</p>
       {:else}
@@ -422,6 +459,14 @@
     margin-top: -2rem;
   }
 
+  .right[aria-busy="true"] .weeks {
+    opacity: 0.6;
+    transition: opacity 150ms;
+  }
+  .loading {
+    margin: 0;
+    color: var(--ink-2);
+  }
   .weeks {
     display: grid;
     gap: 1rem;

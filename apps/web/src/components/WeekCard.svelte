@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { formatKm, formatPace, type Lang, type Week } from "@finisher/core";
+  import { formatKm, formatPace } from "@finisher/core/format";
+  import type { Lang, Week } from "@finisher/core";
   import { T } from "../lib/i18n";
 
   let { lang, week }: { lang: Lang; week: Week } = $props();

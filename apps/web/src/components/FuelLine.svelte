@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { formatDuration, formatKm, type Lang, type Gel } from "@finisher/core";
+  import { formatDuration, formatKm } from "@finisher/core/format";
+  import type { Lang, Gel } from "@finisher/core";
   import { T } from "../lib/i18n";
 
   let { lang, gels, distanceKm, targetMinutes }: { lang: Lang; gels: Gel[]; distanceKm: number; targetMinutes: number } =

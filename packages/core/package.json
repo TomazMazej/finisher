@@ -12,5 +12,11 @@
   "devDependencies": {
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./fuel": "./src/fuel.ts",
+    "./format": "./src/format.ts",
+    "./dates": "./src/dates.ts"
   }
 }

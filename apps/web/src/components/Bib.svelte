@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatDuration, formatPace } from "@finisher/core";
+  import { formatDuration, formatPace } from "@finisher/core/format";
   import type { Lang } from "@finisher/core";
   import { T } from "../lib/i18n";
 

@@ -1,0 +1,61 @@
+---
+import Legal from "../../layouts/Legal.astro";
+import { SITE } from "../../lib/site";
+---
+
+<Legal lang="en" title="Privacy" path="/en/privacy">
+  <p>We collect only the data needed to calculate and deliver your plan. We do not use cookies or advertising trackers.</p>
+
+  <h2>Controller</h2>
+  <p>{SITE.operator}, {SITE.address}. Privacy contact: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+
+  <h2>What data we process</h2>
+  <ul>
+    <li>
+      <b>Preview calculation:</b> distance, goal time, race date, weekly volume, running days, an optional recent result and gel settings.
+      The server uses them for the calculation and does not store them. It only records that a preview was calculated, with language and
+      distance, without IP address and without a visitor identifier.
+    </li>
+    <li>
+      <b>Purchase:</b> the data above, language, plan start date, order number, payment status, amount and the email address provided by the
+      payment provider. If you use a referral code, we store it too.
+    </li>
+    <li><b>Ticks</b> you set on the “My plan” page.</li>
+    <li>
+      <b>In your browser</b> (localStorage, not cookies): your chosen language and theme. This stays in your browser and is not sent to us.
+    </li>
+    <li>
+      <b>Technical data:</b> for each request the host processes your IP address and browser data to deliver the site and protect it from
+      abuse.
+    </li>
+  </ul>
+
+  <h2>Purpose and legal basis</h2>
+  <ul>
+    <li>Calculating and delivering the plan and saving ticks: performance of a contract (Art. 6(1)(b) GDPR).</li>
+    <li>Accounting records of purchases: legal obligation (Art. 6(1)(c) GDPR).</li>
+    <li>Aggregate visit statistics without personal data and site protection: legitimate interest (Art. 6(1)(f) GDPR).</li>
+  </ul>
+
+  <h2>Processors</h2>
+  <ul>
+    <li>Cloudflare, Inc.: website hosting and database (Western Europe region).</li>
+    <li>{SITE.paymentProvider}: payment, invoice and VAT. It is an independent controller for payment data; we never see your card number.</li>
+    <li>An email delivery provider, once delivery by email is enabled.</li>
+  </ul>
+  <p>Where data is transferred outside the EU, this is based on standard contractual clauses or other lawful mechanisms.</p>
+
+  <h2>Retention</h2>
+  <ul>
+    <li>We keep order data and ticks while you have access to your plan, or as long as accounting law requires.</li>
+    <li>Ticks are deleted together with the order.</li>
+    <li>Event statistics contain no personal data.</li>
+  </ul>
+
+  <h2>Your rights</h2>
+  <p>
+    You can request access to your data, correction, erasure, restriction or portability, and object to processing based on legitimate
+    interest. Write to <a href={`mailto:${SITE.email}`}>{SITE.email}</a> from the address you paid with. You can lodge a complaint with the
+    Slovenian Information Commissioner (ip-rs.si) or the supervisory authority in your country.
+  </p>
+</Legal>

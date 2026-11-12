@@ -1,0 +1,62 @@
+---
+import Legal from "../layouts/Legal.astro";
+import { SITE } from "../lib/site";
+---
+
+<Legal lang="sl" title="Zasebnost" path="/zasebnost">
+  <p>Zbiramo le podatke, ki so potrebni za izračun in dostavo načrta. Piškotkov in oglasnih sledilnikov ne uporabljamo.</p>
+
+  <h2>Upravljavec</h2>
+  <p>{SITE.operator}, {SITE.address}. Kontakt za vprašanja o zasebnosti: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+
+  <h2>Katere podatke obdelujemo</h2>
+  <ul>
+    <li>
+      <b>Izračun predogleda:</b> razdalja, ciljni čas, datum tekme, tedenski obseg, dnevi teka, neobvezno nedavni rezultat in nastavitve
+      gelov. Strežnik jih uporabi za izračun in jih ne shrani. Zabeleži le, da je bil predogled izračunan, z jezikom in razdaljo, brez IP
+      naslova in brez oznake obiskovalca.
+    </li>
+    <li>
+      <b>Nakup:</b> zgornji podatki, jezik, datum začetka načrta, številka naročila, stanje plačila, znesek in email naslov, ki ga sporoči
+      plačilni posrednik. Če uporabiš referenčno kodo, shranimo tudi njo.
+    </li>
+    <li><b>Kljukice</b>, ki jih označiš na strani »Moj načrt«.</li>
+    <li>
+      <b>V tvojem brskalniku</b> (localStorage, ne piškotki): izbrani jezik in tema. Ti podatki ostanejo v brskalniku in se ne pošiljajo
+      nam.
+    </li>
+    <li>
+      <b>Tehnični podatki:</b> gostitelj ob vsaki zahtevi obdela IP naslov in podatke o brskalniku, da stran dostavi in zaščiti pred
+      zlorabami.
+    </li>
+  </ul>
+
+  <h2>Namen in pravna podlaga</h2>
+  <ul>
+    <li>Izračun, dostava načrta in shranjevanje kljukic: izvajanje pogodbe (člen 6(1)(b) GDPR).</li>
+    <li>Računovodske evidence o nakupih: zakonska obveznost (člen 6(1)(c) GDPR).</li>
+    <li>Skupna statistika obiskov brez osebnih podatkov in zaščita strani: zakoniti interes (člen 6(1)(f) GDPR).</li>
+  </ul>
+
+  <h2>Obdelovalci</h2>
+  <ul>
+    <li>Cloudflare, Inc.: gostovanje strani in baza podatkov (regija zahodna Evropa).</li>
+    <li>{SITE.paymentProvider}: plačilo, račun in DDV. Za plačilne podatke je samostojen upravljavec, številke kartice ne vidimo.</li>
+    <li>Ponudnik pošiljanja emailov, ko bo dostava po emailu vklopljena.</li>
+  </ul>
+  <p>Kadar podatki potujejo izven EU, se to izvaja na podlagi standardnih pogodbenih klavzul ali drugih zakonitih mehanizmov.</p>
+
+  <h2>Hramba</h2>
+  <ul>
+    <li>Podatke naročila in kljukice hranimo, dokler imaš dostop do načrta, ali dokler zahteva zakonodaja o računovodstvu.</li>
+    <li>Kljukice se izbrišejo skupaj z naročilom.</li>
+    <li>Statistika dogodkov ne vsebuje osebnih podatkov.</li>
+  </ul>
+
+  <h2>Tvoje pravice</h2>
+  <p>
+    Lahko zahtevaš dostop do svojih podatkov, popravek, izbris, omejitev obdelave ali prenos in ugovarjaš obdelavi na podlagi zakonitega
+    interesa. Piši na <a href={`mailto:${SITE.email}`}>{SITE.email}</a> z naslova, s katerim si plačal. Pritožbo lahko vložiš pri
+    Informacijskem pooblaščencu (ip-rs.si).
+  </p>
+</Legal>

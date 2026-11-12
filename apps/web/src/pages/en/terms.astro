@@ -1,0 +1,54 @@
+---
+import Legal from "../../layouts/Legal.astro";
+import { SITE } from "../../lib/site";
+---
+
+<Legal lang="en" title="Terms of use" path="/en/terms">
+  <h2>Provider</h2>
+  <p>{SITE.operator}, {SITE.address}, tax number {SITE.taxId}. Contact: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+
+  <h2>What you buy</h2>
+  <p>
+    Finisher is digital content: a training plan for one race, a gel schedule, split times, exercises and a checklist. The plan is
+    calculated by rules from the data you enter. It is not personal coaching and not medical or nutritional advice. See also
+    <a href="/en/health">Health and safety</a>.
+  </p>
+
+  <h2>Price and payment</h2>
+  <p>
+    You pay once, there is no subscription. The price including VAT is shown before purchase. Payment is handled by {SITE.paymentProvider},
+    which is the seller for this purchase and issues the invoice. Its terms also apply.
+  </p>
+
+  <h2>Delivery</h2>
+  <p>
+    After payment you get a link to the “My plan” page with the full plan, the PDF and calendar export. The link is your access, so do not
+    share it publicly. If you lose it, write to us from the address you paid with.
+  </p>
+
+  <h2>Right of withdrawal</h2>
+  <p>
+    The plan is digital content not supplied on a physical medium. At purchase you expressly agree that delivery starts immediately and
+    acknowledge that you thereby lose the 14-day right of withdrawal. If the plan does not open or work because of a technical fault, write
+    to us and we will fix it or refund you.
+  </p>
+
+  <h2>Use</h2>
+  <ul>
+    <li>The plan is for your personal use. Do not resell or publish it.</li>
+    <li>The data you enter must be accurate, otherwise the plan will not fit you.</li>
+    <li>The plan is calculated from the purchase date to the race date and does not change afterwards.</li>
+  </ul>
+
+  <h2>Liability</h2>
+  <p>
+    We do not guarantee a race result. You are responsible for your health and your decisions during training. We are liable for damage
+    only to the extent that liability cannot be excluded under applicable law. Your statutory consumer rights are not affected.
+  </p>
+
+  <h2>Changes and governing law</h2>
+  <p>
+    We may update these terms. The terms in force on the day of purchase apply to it. The law of the Republic of Slovenia applies. We try
+    to resolve disputes amicably; consumers can also use the EU online dispute resolution platform.
+  </p>
+</Legal>

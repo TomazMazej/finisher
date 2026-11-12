@@ -11,6 +11,7 @@
   import Notes from "./Notes.svelte";
   import { sessionDates } from "@finisher/core/schedule";
   import { download, planIcs } from "../lib/exports";
+  import LegalLinks from "./LegalLinks.svelte";
 
   type DistKey = "10" | "21.0975" | "42.195";
   type Loaded = Extract<FullPlanResponse, { ok: true }>;
@@ -275,6 +276,7 @@
         </section>
 
         <p class="muted small">{t.disclaimer}</p>
+        <LegalLinks {lang} />
       </main>
     </div>
   {/if}

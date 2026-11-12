@@ -65,6 +65,7 @@ type Dict = {
   buyItems: string[];
   buyCta: string;
   buyNote: string;
+  consent: { before: string; terms: string; after: string };
   buyClosed: string;
   testCode: string;
   openPlan: string;
@@ -184,6 +185,11 @@ export const T: Record<Lang, Dict> = {
       "PDF za tisk in kljukanje ter izvoz v koledar",
     ],
     buyCta: "Kupi cel načrt",
+    consent: {
+      before: "Strinjam se s ",
+      terms: "pogoji uporabe",
+      after: " in želim dostop takoj. Vem, da s tem izgubim pravico do odstopa v 14 dneh.",
+    },
     buyNote: "Enkratno plačilo. Povezavo do načrta dobiš po emailu, brez registracije.",
     buyClosed: "Nakup še ni odprt. Če imaš testno kodo, jo vpiši in odpri cel načrt.",
     testCode: "Testna koda",
@@ -325,6 +331,11 @@ export const T: Record<Lang, Dict> = {
       "printable PDF with checkboxes and calendar export",
     ],
     buyCta: "Buy the full plan",
+    consent: {
+      before: "I agree to the ",
+      terms: "terms of use",
+      after: " and want access right away. I understand that I lose the 14-day right of withdrawal.",
+    },
     buyNote: "One payment. You get a link to your plan by email, no account needed.",
     buyClosed: "Purchases are not open yet. If you have a test code, enter it to open the full plan.",
     testCode: "Test code",

@@ -1,0 +1,132 @@
+---
+import "@fontsource/big-shoulders-display/800";
+import "@fontsource/atkinson-hyperlegible/400";
+import "@fontsource/atkinson-hyperlegible/700";
+import "../styles/global.css";
+import { LEGAL_PAIRS, LEGAL_PATHS, SITE } from "../lib/site";
+
+interface Props {
+  lang: "sl" | "en";
+  title: string;
+  path: string;
+}
+const { lang, title, path } = Astro.props;
+const p = LEGAL_PATHS[lang];
+const other = LEGAL_PAIRS[path] ?? "/";
+const L =
+  lang === "sl"
+    ? { back: "Nazaj na načrt", updated: `Zadnja sprememba: ${SITE.updated}`, terms: "Pogoji uporabe", privacy: "Zasebnost", health: "Zdravje in varnost", other: "English" }
+    : { back: "Back to the planner", updated: `Last updated: ${SITE.updatedEn}`, terms: "Terms", privacy: "Privacy", health: "Health and safety", other: "Slovenščina" };
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title} | Finisher</title>
+    <meta name="theme-color" content="#e8edf2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1726" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" hreflang={lang === "sl" ? "en" : "sl"} href={other} />
+    <script is:inline>
+      try {
+        const t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div class="legal">
+      <header>
+        <a class="logo" href="/">Finisher</a>
+        <a class="lang" href={other} hreflang={lang === "sl" ? "en" : "sl"}>{L.other}</a>
+      </header>
+      <main>
+        <h1>{title}</h1>
+        <p class="upd">{L.updated}</p>
+        <slot />
+      </main>
+      <footer>
+        <a href="/">{L.back}</a>
+        <nav>
+          <a href={p.terms} aria-current={path === p.terms ? "page" : undefined}>{L.terms}</a>
+          <a href={p.privacy} aria-current={path === p.privacy ? "page" : undefined}>{L.privacy}</a>
+          <a href={p.health} aria-current={path === p.health ? "page" : undefined}>{L.health}</a>
+        </nav>
+      </footer>
+    </div>
+  </body>
+</html>
+
+<style>
+  .legal {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 1rem 1.25rem 4rem;
+    line-height: 1.6;
+  }
+  header,
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .logo {
+    font: 800 1.6rem/1 var(--display);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  a {
+    color: var(--bib-blue);
+  }
+  a:focus-visible {
+    outline: 3px solid var(--bib-blue);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  main {
+    margin: 2.5rem 0 3rem;
+  }
+  h1 {
+    font: 800 clamp(2.4rem, 8vw, 3.4rem) / 1 var(--display);
+    margin: 0 0 0.5rem;
+  }
+  .upd {
+    color: var(--ink-2);
+    margin: 0 0 2rem;
+  }
+  main :global(h2) {
+    font-size: 1.2rem;
+    margin: 2rem 0 0.5rem;
+  }
+  main :global(ul) {
+    padding-left: 1.2rem;
+  }
+  main :global(li) {
+    margin: 0.3rem 0;
+  }
+  main :global(.box) {
+    background: var(--amber-bg);
+    color: var(--amber);
+    border-left: 4px solid var(--amber);
+    padding: 0.9rem 1rem;
+    border-radius: 0 var(--r-ui) var(--r-ui) 0;
+  }
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+  }
+  nav {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  nav a[aria-current="page"] {
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 700;
+  }
+</style>

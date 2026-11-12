@@ -27,6 +27,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (!req) return json({ ok: false, error: "INVALID_INPUT" }, 400);
   if (!buildPreview(req).ok) return json({ ok: false, error: "INVALID_INPUT" }, 400);
 
+  // Izrecno soglasje s pogoji in takojšnjo dostavo digitalne vsebine.
+  if (body.consent !== true) return json({ ok: false, error: "CONSENT_REQUIRED" }, 400);
+
   const code = typeof body.testCode === "string" ? body.testCode.trim() : "";
   if (!code) return json({ ok: false, error: "PAYMENTS_DISABLED" }, 403);
   if (!(await isTestCode(code, env.TOKEN_SECRET, env.TEST_CODE))) return json({ ok: false, error: "INVALID_CODE" }, 403);

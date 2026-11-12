@@ -1,0 +1,54 @@
+---
+import Legal from "../layouts/Legal.astro";
+import { SITE } from "../lib/site";
+---
+
+<Legal lang="sl" title="Pogoji uporabe" path="/pogoji">
+  <h2>Ponudnik</h2>
+  <p>{SITE.operator}, {SITE.address}, davčna številka {SITE.taxId}. Kontakt: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+
+  <h2>Kaj kupiš</h2>
+  <p>
+    Finisher je digitalna vsebina: načrt treningov za eno tekmo, urnik gelov, vmesni časi, vaje in kontrolni seznam. Načrt izračunajo
+    pravila iz podatkov, ki jih vpišeš. Ni osebno trenerstvo in ni zdravniški ali prehranski nasvet. Glej tudi
+    <a href="/zdravje">Zdravje in varnost</a>.
+  </p>
+
+  <h2>Cena in plačilo</h2>
+  <p>
+    Plačaš enkrat, naročnine ni. Cena z DDV je navedena pred nakupom. Plačilo izvede {SITE.paymentProvider}, ki je prodajalec pri tem
+    nakupu in izda račun. Zanj veljajo tudi njegovi pogoji.
+  </p>
+
+  <h2>Dostava</h2>
+  <p>
+    Po plačilu dobiš povezavo do strani »Moj načrt«, kjer so cel načrt, PDF in izvoz v koledar. Povezava je tvoj dostop, zato je ne deli
+    javno. Če jo izgubiš, nam piši z naslova, s katerim si plačal.
+  </p>
+
+  <h2>Odstop od pogodbe</h2>
+  <p>
+    Načrt je digitalna vsebina, ki ni na fizičnem nosilcu. Pri nakupu izrecno soglašaš, da se dostava začne takoj, in potrdiš, da s tem
+    izgubiš pravico do odstopa od pogodbe v 14 dneh. Če se načrt zaradi tehnične napake ne odpre ali ne deluje, nam piši in težavo
+    odpravimo ali vrnemo denar.
+  </p>
+
+  <h2>Uporaba</h2>
+  <ul>
+    <li>Načrt je za tvojo osebno uporabo. Ne prodajaj in ne objavljaj ga naprej.</li>
+    <li>Podatki, ki jih vpišeš, morajo biti resnični, sicer načrt ne bo ustrezen.</li>
+    <li>Načrt se ob nakupu izračuna od datuma nakupa do datuma tekme in se kasneje ne spreminja.</li>
+  </ul>
+
+  <h2>Odgovornost</h2>
+  <p>
+    Rezultata na tekmi ne zagotavljamo. Za svoje zdravje in odločitve med treningi odgovarjaš sam. Za škodo odgovarjamo le, kolikor
+    odgovornosti po veljavnem pravu ni mogoče izključiti. Tvoje zakonske pravice kot potrošnika ostanejo nespremenjene.
+  </p>
+
+  <h2>Spremembe in pravo</h2>
+  <p>
+    Pogoje lahko posodobimo. Za nakup veljajo pogoji na dan nakupa. Velja pravo Republike Slovenije. Spore poskušamo rešiti dogovorno,
+    potrošniki lahko uporabijo tudi platformo EU za spletno reševanje sporov.
+  </p>
+</Legal>

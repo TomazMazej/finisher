@@ -10,6 +10,7 @@
   import VolumeBars from "./VolumeBars.svelte";
   import FuelLine from "./FuelLine.svelte";
   import Notes from "./Notes.svelte";
+  import LegalLinks from "./LegalLinks.svelte";
 
   type DistKey = "10" | "21.0975" | "42.195";
   type Theme = "auto" | "light" | "dark";
@@ -142,13 +143,14 @@
   let showCode = $state(false);
   let code = $state("");
   let buying = $state(false);
+  let consent = $state(false);
   let buyError = $state<"" | "INVALID_CODE" | "INVALID_INPUT" | "NETWORK">("");
   try {
     code = localStorage.getItem("testCode") ?? "";
   } catch {}
 
   async function buy() {
-    if (!plan?.ok || buying) return;
+    if (!plan?.ok || buying || !consent) return;
     if (!code) {
       showCode = true;
       return;
@@ -170,6 +172,7 @@
           ...(recent ? { recent } : {}),
           fuel: { carbsPerHour: Number(carbs), gelCarbs: Number(gelCarbs), drinkPerHour: Number(drink), firstGelMin: Number(firstGel) },
           testCode: code.trim(),
+          consent: true,
         }),
       });
       const body = (await res.json()) as { ok: boolean; url?: string; error?: string };
@@ -362,7 +365,13 @@
         <ul>
           {#each t.buyItems as item}<li>{item}</li>{/each}
         </ul>
-        <button type="button" class="cta" disabled={!plan?.ok || buying} onclick={buy}>{t.buyCta}</button>
+        <label class="consent">
+          <input type="checkbox" bind:checked={consent} />
+          <span>
+            {t.consent.before}<a href={lang === "sl" ? "/pogoji" : "/en/terms"}>{t.consent.terms}</a>{t.consent.after}
+          </span>
+        </label>
+        <button type="button" class="cta" disabled={!plan?.ok || buying || !consent} onclick={buy}>{t.buyCta}</button>
         <p class="hint">{t.buyNote}</p>
         {#if showCode}
           <form class="code" onsubmit={(e) => { e.preventDefault(); buy(); }}>
@@ -370,7 +379,7 @@
             <label class="label" for="test-code">{t.testCode}</label>
             <div class="code-row">
               <input id="test-code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" bind:value={code} />
-              <button type="submit" class="cta small" disabled={!code.trim() || buying}>{t.openPlan}</button>
+              <button type="submit" class="cta small" disabled={!code.trim() || buying || !consent}>{t.openPlan}</button>
             </div>
             {#if buyError}<p class="msg" role="alert">{t.buyErrors[buyError]}</p>{/if}
           </form>
@@ -378,6 +387,7 @@
       </section>
 
       <p class="disc">{t.disclaimer}</p>
+      <LegalLinks {lang} />
     </div>
   </div>
 </div>
@@ -672,5 +682,24 @@
     font-size: 0.9rem;
     color: var(--ink-2);
     max-width: 70ch;
+  }
+  .consent {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    margin: 0.75rem 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+  .consent input {
+    width: 1.3rem;
+    height: 1.3rem;
+    margin: 0.05rem 0 0;
+    flex: none;
+    accent-color: var(--bib-blue);
+  }
+  .consent a {
+    color: var(--bib-blue);
   }
 </style>

@@ -144,17 +144,13 @@
   let code = $state("");
   let buying = $state(false);
   let consent = $state(false);
-  let buyError = $state<"" | "INVALID_CODE" | "INVALID_INPUT" | "NETWORK">("");
+  let buyError = $state<"" | "INVALID_CODE" | "INVALID_INPUT" | "NETWORK" | "PAYMENT_ERROR">("");
   try {
     code = localStorage.getItem("testCode") ?? "";
   } catch {}
 
   async function buy() {
     if (!plan?.ok || buying || !consent) return;
-    if (!code) {
-      showCode = true;
-      return;
-    }
     buying = true;
     buyError = "";
     try {
@@ -171,14 +167,14 @@
           lang,
           ...(recent ? { recent } : {}),
           fuel: { carbsPerHour: Number(carbs), gelCarbs: Number(gelCarbs), drinkPerHour: Number(drink), firstGelMin: Number(firstGel) },
-          testCode: code.trim(),
+          ...(code.trim() ? { testCode: code.trim() } : {}),
           consent: true,
         }),
       });
       const body = (await res.json()) as { ok: boolean; url?: string; error?: string };
       if (body.ok && body.url) {
         try {
-          localStorage.setItem("testCode", code.trim());
+          if (code.trim()) localStorage.setItem("testCode", code.trim());
         } catch {}
         location.href = body.url;
         return;
@@ -191,6 +187,8 @@
         buyError = "INVALID_CODE";
       } else if (body.error === "PAYMENTS_DISABLED") {
         buyError = "";
+      } else if (body.error === "PAYMENT_ERROR") {
+        buyError = "PAYMENT_ERROR";
       } else buyError = "INVALID_INPUT";
     } catch {
       buyError = "NETWORK";
@@ -373,6 +371,10 @@
         </label>
         <button type="button" class="cta" disabled={!plan?.ok || buying || !consent} onclick={buy}>{t.buyCta}</button>
         <p class="hint">{t.buyNote}</p>
+        {#if buyError && !showCode}<p class="msg" role="alert">{t.buyErrors[buyError]}</p>{/if}
+        {#if !showCode}
+          <button type="button" class="linkish" onclick={() => (showCode = true)}>{t.haveCode}</button>
+        {/if}
         {#if showCode}
           <form class="code" onsubmit={(e) => { e.preventDefault(); buy(); }}>
             <p class="hint">{t.buyClosed}</p>
@@ -701,5 +703,19 @@
   }
   .consent a {
     color: var(--bib-blue);
+  }
+  .linkish {
+    background: none;
+    border: 0;
+    padding: 0.25rem 0;
+    color: var(--ink-2);
+    text-decoration: underline;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .linkish:focus-visible {
+    outline: 3px solid var(--bib-blue);
+    outline-offset: 2px;
   }
 </style>

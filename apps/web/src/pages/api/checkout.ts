@@ -3,6 +3,8 @@ import { env } from "cloudflare:workers";
 import { generatePlan } from "@finisher/core";
 import { buildPreview, effectiveToday, parseRequest } from "../../lib/server/preview";
 import { isTestCode, newOrderId, signToken } from "../../lib/server/token";
+import { createCheckoutSession, stripeEnabled } from "../../lib/server/stripe";
+import { logEvent } from "../../lib/server/orders";
 import { json } from "../../lib/server/http";
 import type { StoredInput } from "../../lib/types";
 
@@ -11,10 +13,12 @@ export const prerender = false;
 const num = (x: unknown, lo: number, hi: number) => (typeof x === "number" && Number.isFinite(x) && x >= lo && x <= hi ? x : undefined);
 
 /**
- * Začetek nakupa. Plačila še niso povezana, zato zdaj deluje samo s testno kodo:
- * ustvari plačano testno naročilo in vrne povezavo do strani "moj načrt".
+ * Začetek nakupa.
+ * - Z veljavno testno kodo: takoj plačano testno naročilo in povezava do strani "moj načrt".
+ * - Sicer, če je Stripe nastavljen: naročilo v čakanju in povezava do Stripe Checkout.
+ *   Plačano ga označi šele webhook (/api/stripe-webhook).
  */
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, url }) => {
   const text = await request.text();
   if (text.length > 2_000) return json({ ok: false, error: "INVALID_INPUT" }, 413);
   let body: Record<string, unknown>;
@@ -31,8 +35,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (body.consent !== true) return json({ ok: false, error: "CONSENT_REQUIRED" }, 400);
 
   const code = typeof body.testCode === "string" ? body.testCode.trim() : "";
-  if (!code) return json({ ok: false, error: "PAYMENTS_DISABLED" }, 403);
-  if (!(await isTestCode(code, env.TOKEN_SECRET, env.TEST_CODE))) return json({ ok: false, error: "INVALID_CODE" }, 403);
+  const isTest = code ? await isTestCode(code, env.TOKEN_SECRET, env.TEST_CODE) : false;
+  if (code && !isTest) return json({ ok: false, error: "INVALID_CODE" }, 403);
+  if (!isTest && !stripeEnabled(env)) return json({ ok: false, error: "PAYMENTS_DISABLED" }, 403);
 
   const f = (body.fuel ?? {}) as Record<string, unknown>;
   const fuel = {
@@ -55,13 +60,36 @@ export const POST: APIRoute = async ({ request }) => {
   if (!generatePlan({ ...input, today }).ok) return json({ ok: false, error: "INVALID_INPUT" }, 400);
 
   const id = newOrderId();
+  const token = await signToken(id, env.TOKEN_SECRET);
+  const planPath = `/moj-nacrt?t=${encodeURIComponent(token)}`;
+
+  if (isTest) {
+    await env.DB.prepare(
+      `INSERT INTO orders (id, status, lang, input_json, plan_start, provider, paid_at)
+       VALUES (?, 'paid', ?, ?, ?, 'test', strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
+    )
+      .bind(id, req.lang, JSON.stringify(input), today)
+      .run();
+    return json({ ok: true, url: planPath });
+  }
+
   await env.DB.prepare(
-    `INSERT INTO orders (id, status, lang, input_json, plan_start, provider, paid_at)
-     VALUES (?, 'paid', ?, ?, ?, 'test', strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
+    `INSERT INTO orders (id, status, lang, input_json, plan_start, provider) VALUES (?, 'pending', ?, ?, ?, 'stripe')`,
   )
     .bind(id, req.lang, JSON.stringify(input), today)
     .run();
-
-  const token = await signToken(id, env.TOKEN_SECRET);
-  return json({ ok: true, url: `/moj-nacrt?t=${encodeURIComponent(token)}` });
+  try {
+    const session = await createCheckoutSession(env, {
+      orderId: id,
+      lang: req.lang,
+      successUrl: `${url.origin}${planPath}&paid=1`,
+      cancelUrl: `${url.origin}/?cancelled=1`,
+    });
+    if (!session.url) throw new Error("Stripe brez URL");
+    await logEvent(env.DB, "checkout", req.lang, String(req.distanceKm));
+    return json({ ok: true, url: session.url });
+  } catch (e) {
+    console.error("checkout", e);
+    return json({ ok: false, error: "PAYMENT_ERROR" }, 502);
+  }
 };

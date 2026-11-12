@@ -4,7 +4,7 @@ export const SITE = {
   operator: "Mazej Development",
   email: "mazejdev@gmail.com",
   /** plačilni posrednik, ki je prodajalec (Merchant of Record) */
-  paymentProvider: "[plačilni posrednik]",
+  paymentProvider: "Stripe (Link, LLC)",
   updated: "12. 11. 2026",
   updatedEn: "12 November 2026",
 } as const;

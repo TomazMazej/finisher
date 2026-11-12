@@ -69,7 +69,8 @@ type Dict = {
   buyClosed: string;
   testCode: string;
   openPlan: string;
-  buyErrors: Record<"INVALID_CODE" | "INVALID_INPUT" | "NETWORK", string>;
+  buyErrors: Record<"INVALID_CODE" | "INVALID_INPUT" | "NETWORK" | "PAYMENT_ERROR", string>;
+  haveCode: string;
   errors: Record<"INVALID_INPUT" | "RACE_PASSED" | "NO_DATE" | "NETWORK", string>;
   warnings: Record<WarningCode, (v?: number, limit?: number) => string>;
   notesTitle: string;
@@ -103,6 +104,7 @@ type Dict = {
     pdfTickOnline: string;
     pdfGels: string;
     pdfPage: (n: number, of: number) => string;
+    confirming: string;
     errors: Record<"INVALID_TOKEN" | "NOT_PAID" | "NOT_FOUND" | "PLAN_ERROR" | "NETWORK", string>;
   };
 };
@@ -190,14 +192,16 @@ export const T: Record<Lang, Dict> = {
       terms: "pogoji uporabe",
       after: " in želim dostop takoj. Vem, da s tem izgubim pravico do odstopa v 14 dneh.",
     },
-    buyNote: "Enkratno plačilo. Povezavo do načrta dobiš po emailu, brez registracije.",
-    buyClosed: "Nakup še ni odprt. Če imaš testno kodo, jo vpiši in odpri cel načrt.",
+    buyNote: "Enkratno plačilo prek Stripe, brez registracije. Po plačilu se odpre tvoj načrt.",
+    buyClosed: "Če imaš testno kodo, jo vpiši in odpri cel načrt.",
+    haveCode: "Imam testno kodo",
     testCode: "Testna koda",
     openPlan: "Odpri cel načrt",
     buyErrors: {
       INVALID_CODE: "Koda ni pravilna.",
       INVALID_INPUT: "Preveri podatke o tekmi zgoraj.",
       NETWORK: "Povezava ni uspela. Poskusi znova.",
+      PAYMENT_ERROR: "Plačila trenutno ni mogoče začeti. Poskusi čez nekaj minut.",
     },
     errors: {
       INVALID_INPUT: "Preveri ciljni čas, km na teden in datum tekme.",
@@ -228,6 +232,7 @@ export const T: Record<Lang, Dict> = {
     my: {
       title: "Moj načrt",
       loading: "Nalagam načrt …",
+      confirming: "Potrjujem plačilo, načrt se odpre v nekaj sekundah …",
       progress: (d, n) => `${d} od ${n} treningov opravljenih`,
       thisWeek: "Ta teden",
       weeksTitle: "Treningi po tednih",
@@ -336,14 +341,16 @@ export const T: Record<Lang, Dict> = {
       terms: "terms of use",
       after: " and want access right away. I understand that I lose the 14-day right of withdrawal.",
     },
-    buyNote: "One payment. You get a link to your plan by email, no account needed.",
-    buyClosed: "Purchases are not open yet. If you have a test code, enter it to open the full plan.",
+    buyNote: "One payment via Stripe, no account needed. Your plan opens after payment.",
+    buyClosed: "If you have a test code, enter it to open the full plan.",
+    haveCode: "I have a test code",
     testCode: "Test code",
     openPlan: "Open the full plan",
     buyErrors: {
       INVALID_CODE: "The code is not correct.",
       INVALID_INPUT: "Check your race details above.",
       NETWORK: "The connection failed. Try again.",
+      PAYMENT_ERROR: "Payment cannot start right now. Try again in a few minutes.",
     },
     errors: {
       INVALID_INPUT: "Check your target time, weekly km and race date.",
@@ -374,6 +381,7 @@ export const T: Record<Lang, Dict> = {
     my: {
       title: "My plan",
       loading: "Loading your plan …",
+      confirming: "Confirming your payment, your plan opens in a few seconds …",
       progress: (d, n) => `${d} of ${n} runs done`,
       thisWeek: "This week",
       weeksTitle: "Runs week by week",

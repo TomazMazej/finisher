@@ -58,14 +58,27 @@
 
   const t = $derived(T[lang]);
 
+  // Po vrnitvi s Stripe lahko webhook zamudi nekaj sekund: počakaj do okoli 1 minute.
+  const fromCheckout = new URLSearchParams(location.search).get("paid") === "1";
+  let confirming = $state(false);
+  let attempts = 0;
+
   async function load() {
     try {
       const res = await fetch(`/api/plan?t=${encodeURIComponent(token)}&open=1`, { cache: "no-store" });
       const body = (await res.json()) as FullPlanResponse;
       if (!body.ok) {
+        if (body.error === "NOT_PAID" && fromCheckout && attempts++ < 30) {
+          confirming = true;
+          setTimeout(load, 2000);
+          return;
+        }
+        confirming = false;
         error = body.error;
         return;
       }
+      confirming = false;
+      if (fromCheckout) history.replaceState(null, "", location.pathname + `?t=${encodeURIComponent(token)}`);
       data = body;
       done = new Set(body.done);
       try {
@@ -167,7 +180,7 @@
   {#if error}
     <p class="msg" role="alert">{t.my.errors[error]}</p>
   {:else if !data}
-    <p class="muted" aria-live="polite">{t.my.loading}</p>
+    <p class="muted" aria-live="polite">{confirming ? t.my.confirming : t.my.loading}</p>
   {:else}
     <div class="layout">
       <aside class="left">

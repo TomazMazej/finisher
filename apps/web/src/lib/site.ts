@@ -1,10 +1,8 @@
 // Podatki o ponudniku za pravne strani. Pred prodajo izpolni vse vrednosti v oglatih oklepajih.
 export const SITE = {
   name: "Finisher",
-  operator: "[Ime in priimek ali naziv dejavnosti]",
-  address: "[Naslov, poštna številka in kraj]",
-  taxId: "[Davčna številka]",
-  email: "[kontakt@domena.si]",
+  operator: "Mazej Development",
+  email: "mazejdev@gmail.com",
   /** plačilni posrednik, ki je prodajalec (Merchant of Record) */
   paymentProvider: "[plačilni posrednik]",
   updated: "12. 11. 2026",

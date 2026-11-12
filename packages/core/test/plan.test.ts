@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { RULES, distanceClass, generatePlan, predictMinutes, weeklyTargets, weeksUntil, type PlanInput } from "../src/plan";
+import {
+  RULES,
+  distanceClass,
+  generatePlan,
+  predictMinutes,
+  realisticImprovement,
+  weeklyTargets,
+  weeksUntil,
+  type PlanInput,
+} from "../src/plan";
 
 const TODAY = "2026-11-11";
 
@@ -314,13 +323,27 @@ describe("posebni primeri", () => {
     expect(predictMinutes({ distanceKm: 10, minutes: 60 }, 10)).toBe(60);
   });
 
-  it("GOAL_AMBITIOUS samo, če je cilj opazno hitrejši od ocene", () => {
-    const codes = (recent: { distanceKm: number; minutes: number }) =>
-      ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 25, recent })).warnings.map((w) => w.code);
-    expect(codes({ distanceKm: 5, minutes: 30 })).toContain("GOAL_AMBITIOUS"); // ocena okoli 1:02:33
-    expect(codes({ distanceKm: 5, minutes: 28.5 })).not.toContain("GOAL_AMBITIOUS"); // ocena okoli 59:25
-    const r = ok(input({ distanceKm: 10, targetMinutes: 60, weeklyKm: 25, recent: { distanceKm: 5, minutes: 30 } }));
-    expect(r.warnings.find((w) => w.code === "GOAL_AMBITIOUS")!.value).toBe(Math.round(r.predictedMinutes!));
+  it("GOAL_AMBITIOUS glede na čas priprave", () => {
+    const codes = (target: number, weeks: number, recent: { distanceKm: number; minutes: number }) =>
+      ok(input({ distanceKm: 21.0975, targetMinutes: target, weeklyKm: 30, weeks, recent })).warnings.map((w) => w.code);
+    const half110 = { distanceKm: 21.0975, minutes: 110 };
+    // uporabnikov primer: zdaj 1:50, cilj 1:45 (4,5 %) v 16 tednih je realen
+    expect(codes(105, 16, half110)).not.toContain("GOAL_AMBITIOUS");
+    // isti cilj v 3 tednih je zahteven (dovoljeno 2 %)
+    expect(codes(105, 3, half110)).toContain("GOAL_AMBITIOUS");
+    // več kot 8 % tudi v dolgi pripravi
+    expect(codes(100, 20, half110)).toContain("GOAL_AMBITIOUS");
+    // počasnejši cilj od trenutne forme nikoli
+    expect(codes(115, 2, half110)).not.toContain("GOAL_AMBITIOUS");
+  });
+
+  it("GOAL_AMBITIOUS vrne oceno in realno mejo", () => {
+    const r = ok(input({ distanceKm: 21.0975, targetMinutes: 100, weeklyKm: 30, weeks: 16, recent: { distanceKm: 21.0975, minutes: 110 } }));
+    const w = r.warnings.find((x) => x.code === "GOAL_AMBITIOUS")!;
+    expect(w.value).toBe(110);
+    expect(w.limit).toBe(Math.round(110 * (1 - realisticImprovement(16))));
+    expect(realisticImprovement(1)).toBe(RULES.goalImproveMin);
+    expect(realisticImprovement(40)).toBe(RULES.goalImproveMax);
   });
 
   it("tempi treningov iz počasnejšega od cilja in ocene, tekma v ciljnem tempu", () => {

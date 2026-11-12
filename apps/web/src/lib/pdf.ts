@@ -120,7 +120,7 @@ export async function buildPlanPdf(plan: FullPlan, lang: Lang, done: Set<string>
     const order = Object.keys(t.warnings);
     const lines = [...plan.warnings]
       .sort((a, b) => order.indexOf(a.code) - order.indexOf(b.code))
-      .flatMap((w) => wrap(`• ${t.warnings[w.code](w.value)}`, reg, 9.5, W - 20));
+      .flatMap((w) => wrap(`• ${t.warnings[w.code](w.value, w.limit)}`, reg, 9.5, W - 20));
     const h = 26 + lines.length * 13;
     ensure(h + 10);
     y -= h;

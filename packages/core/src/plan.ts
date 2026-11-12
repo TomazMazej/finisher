@@ -67,11 +67,13 @@ export type WarningCode =
   | "TWO_DAYS_MARATHON"
   | "LOW_VOLUME_FOR_DAYS" // premalo km za izbrano število dni: v začetnih tednih je tekov manj
   | "LONG_RUN_SHORT" // najdaljši tek v načrtu je precej krajši od tekme (value: km)
-  | "GOAL_AMBITIOUS"; // cilj je opazno hitrejši od ocene iz nedavnega časa (value: ocenjene minute)
+  | "GOAL_AMBITIOUS"; // cilj je hitrejši od realnega napredka do tekme (value: ocena zdaj, limit: realna meja)
 
 export interface Warning {
   code: WarningCode;
   value?: number;
+  /** GOAL_AMBITIOUS: najhitrejši realen čas do tekme (minute) */
+  limit?: number;
 }
 
 export interface Paces {
@@ -145,8 +147,13 @@ export const RULES = {
   longRunVsRaceMin: 0.7,
   /** Riegelov eksponent za oceno časa na drugi razdalji: T2 = T1 × (D2 / D1) ^ e. */
   riegelExp: 1.06,
-  /** Cilj velja za zahtevnega, če je hitrejši od ocene za več kot ta delež. */
-  goalAmbitiousMargin: 0.03,
+  /**
+   * Realen napredek do tekme glede na trenutno formo: okoli 0,5 % na teden priprave,
+   * vsaj 2 % (dnevna oblika, taktika) in največ 8 %. Hitrejši cilj sproži GOAL_AMBITIOUS.
+   */
+  goalImprovePerWeek: 0.005,
+  goalImproveMin: 0.02,
+  goalImproveMax: 0.08,
   /** Pospeški (20 s) na lahkem teku v tednih brez tempa in intervalov ter v tednu tekme. */
   strides: 4,
   /** Zadnji km dolgega teka v tempu tekme: delež dolgega teka in zgornja meja po razdalji. */
@@ -174,6 +181,12 @@ export { weeksUntil };
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 const fixed = (p: number): PaceRange => ({ min: p, max: p });
+
+/** Delež, za katerega se lahko čas realno izboljša v toliko tednih priprave. */
+export function realisticImprovement(weeks: number): number {
+  const w = Math.min(weeks, RULES.maxWeeksShown);
+  return clamp(w * RULES.goalImprovePerWeek, RULES.goalImproveMin, RULES.goalImproveMax);
+}
 
 /** Oceni čas na razdalji iz nedavnega rezultata (Riegel). */
 export function predictMinutes(recent: RecentResult, distanceKm: number): number {
@@ -376,8 +389,11 @@ export function generatePlan(input: PlanInput): PlanResult {
   if (days === 2 && dc === "full") warnings.push({ code: "TWO_DAYS_MARATHON" });
   if (cur < RULES.lowVolumePerDayKm * days) warnings.push({ code: "LOW_VOLUME_FOR_DAYS" });
 
-  if (predictedMinutes && input.targetMinutes < predictedMinutes * (1 - RULES.goalAmbitiousMargin)) {
-    warnings.push({ code: "GOAL_AMBITIOUS", value: Math.round(predictedMinutes) });
+  if (predictedMinutes) {
+    const limit = predictedMinutes * (1 - realisticImprovement(weeksToRace));
+    if (input.targetMinutes < limit) {
+      warnings.push({ code: "GOAL_AMBITIOUS", value: Math.round(predictedMinutes), limit: Math.round(limit) });
+    }
   }
 
   const longest = Math.max(0, ...weeks.flatMap((w) => w.sessions.filter((s) => s.type === "long").map((s) => s.km)));

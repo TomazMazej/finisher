@@ -67,7 +67,7 @@ type Dict = {
   openPlan: string;
   buyErrors: Record<"INVALID_CODE" | "INVALID_INPUT" | "NETWORK", string>;
   errors: Record<"INVALID_INPUT" | "RACE_PASSED" | "NO_DATE" | "NETWORK", string>;
-  warnings: Record<WarningCode, (v?: number) => string>;
+  warnings: Record<WarningCode, (v?: number, limit?: number) => string>;
   notesTitle: string;
   fuelWarnings: Record<FuelWarning, string>;
   disclaimer: string;
@@ -194,7 +194,8 @@ export const T: Record<Lang, Dict> = {
       NETWORK: "Predogleda ni bilo mogoče naložiti. Preveri povezavo in poskusi znova.",
     },
     warnings: {
-      GOAL_AMBITIOUS: (v) => `Po tvoji formi je realno okoli ${formatDuration(v ?? 0)}, cilj je hitrejši.`,
+      GOAL_AMBITIOUS: (v, limit) =>
+        `Zdaj zmoreš okoli ${formatDuration(v ?? 0)}. Z napredkom do tekme je realno okoli ${formatDuration(limit ?? v ?? 0)}, cilj je hitrejši od tega.`,
       LONG_RUN_SHORT: (v) => `Najdaljši tek bo ${v} km, precej manj od tekme, zato je cilj zahteven.`,
       SHORT_PREP: () => "Manj kot 4 tedne do tekme: forma se ne bo dosti spremenila. Pridi spočit, začni malo počasneje in ciljni čas vzemi kot zgornjo mejo.",
       LOW_VOLUME_MARATHON: () => "Manj kot 20 km na teden je za maraton malo.",
@@ -331,7 +332,8 @@ export const T: Record<Lang, Dict> = {
       NETWORK: "The preview could not be loaded. Check your connection and try again.",
     },
     warnings: {
-      GOAL_AMBITIOUS: (v) => `Your fitness points to about ${formatDuration(v ?? 0)}; your target is faster.`,
+      GOAL_AMBITIOUS: (v, limit) =>
+        `You can run about ${formatDuration(v ?? 0)} now. With progress until race day, about ${formatDuration(limit ?? v ?? 0)} is realistic; your target is faster than that.`,
       LONG_RUN_SHORT: (v) => `Your longest run will be ${v} km, well short of the race, so the target is ambitious.`,
       SHORT_PREP: () => "Under 4 weeks to the race: fitness won't change much. Arrive fresh, start a little slower and treat the target as a ceiling.",
       LOW_VOLUME_MARATHON: () => "Under 20 km a week is low for a marathon.",

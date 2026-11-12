@@ -13,7 +13,7 @@
   <aside class="notes" aria-label={t.notesTitle}>
     <h2>{t.notesTitle}</h2>
     <ul>
-      {#each sorted as w}<li>{t.warnings[w.code](w.value)}</li>{/each}
+      {#each sorted as w}<li>{t.warnings[w.code](w.value, w.limit)}</li>{/each}
     </ul>
   </aside>
 {/if}

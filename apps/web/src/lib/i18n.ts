@@ -62,8 +62,13 @@ type Dict = {
   buyItems: string[];
   buyCta: string;
   buyNote: string;
+  buyClosed: string;
+  testCode: string;
+  openPlan: string;
+  buyErrors: Record<"INVALID_CODE" | "INVALID_INPUT" | "NETWORK", string>;
   errors: Record<"INVALID_INPUT" | "RACE_PASSED" | "NO_DATE" | "NETWORK", string>;
   warnings: Record<WarningCode, (v?: number) => string>;
+  notesTitle: string;
   fuelWarnings: Record<FuelWarning, string>;
   disclaimer: string;
   locale: string;
@@ -82,6 +87,18 @@ type Dict = {
     exercisesTitle: string;
     checklistTitle: string;
     keepLink: string;
+    calendar: string;
+    pdf: string;
+    preparing: string;
+    exportFailed: string;
+    exportHint: string;
+    calName: (dist: string) => string;
+    pdfTitle: (dist: string, time: string) => string;
+    pdfMeta: (date: string, pace: string) => string;
+    pdfPaces: string;
+    pdfTickOnline: string;
+    pdfGels: string;
+    pdfPage: (n: number, of: number) => string;
     errors: Record<"INVALID_TOKEN" | "NOT_PAID" | "NOT_FOUND" | "PLAN_ERROR" | "NETWORK", string>;
   };
 };
@@ -162,6 +179,14 @@ export const T: Record<Lang, Dict> = {
     ],
     buyCta: "Kupi cel načrt",
     buyNote: "Enkratno plačilo. Povezavo do načrta dobiš po emailu, brez registracije.",
+    buyClosed: "Nakup še ni odprt. Če imaš testno kodo, jo vpiši in odpri cel načrt.",
+    testCode: "Testna koda",
+    openPlan: "Odpri cel načrt",
+    buyErrors: {
+      INVALID_CODE: "Koda ni pravilna.",
+      INVALID_INPUT: "Preveri podatke o tekmi zgoraj.",
+      NETWORK: "Povezava ni uspela. Poskusi znova.",
+    },
     errors: {
       INVALID_INPUT: "Preveri ciljni čas, km na teden in datum tekme.",
       RACE_PASSED: "Datum tekme je danes ali že mimo. Izberi poznejši datum.",
@@ -169,18 +194,16 @@ export const T: Record<Lang, Dict> = {
       NETWORK: "Predogleda ni bilo mogoče naložiti. Preveri povezavo in poskusi znova.",
     },
     warnings: {
-      SHORT_PREP: () =>
-        "Do tekme je manj kot 4 tedne. V tem času se forma ne izboljša veliko, zato načrt skrbi predvsem, da prideš na štart spočit. Prve kilometre teci malo počasneje od ciljnega tempa in ciljni čas vzemi kot zgornjo mejo, ne kot obveznost.",
-      LONG_PREP: (v) => `Do tekme je več kot 20 tednov. Načrt pokrije zadnjih 20, prej (${slWeeks(v ?? 0)}) teci lahke teke.`,
-      LOW_VOLUME_MARATHON: () => "Za maraton je manj kot 20 km na teden malo. Razmisli o daljši pripravi ali krajši razdalji.",
-      HIGH_AVG_RUN: (v) => `Pri tem vnosu je povprečen tek okoli ${v} km. Če zdaj ne tečeš toliko, zmanjšaj km na teden.`,
-      TWO_DAYS_MARATHON: () => "Dva teka na teden sta za maraton malo. Razmisli o več dneh ali krajši razdalji.",
-      LOW_VOLUME_FOR_DAYS: () => "Za toliko dni je km na teden malo, zato ima načrt v začetnih tednih manj tekov. Dodaja jih, ko obseg raste.",
-      GOAL_AMBITIOUS: (v) =>
-        `Po tvojem nedavnem rezultatu je realno okoli ${formatDuration(v ?? 0)}. Ciljni čas je hitrejši, zato je zahteven. Tempi treningov izhajajo iz tvoje forme, ciljni tempo vadiš na koncu dolgih tekov.`,
-      LONG_RUN_SHORT: (v) =>
-        `Najdaljši tek v načrtu je ${v} km, kar je precej manj od tekme. Načrt obseg dviguje počasi, da se izogne poškodbam, zato je ciljni čas lahko prezahteven.`,
+      GOAL_AMBITIOUS: (v) => `Po tvoji formi je realno okoli ${formatDuration(v ?? 0)}, cilj je hitrejši.`,
+      LONG_RUN_SHORT: (v) => `Najdaljši tek bo ${v} km, precej manj od tekme, zato je cilj zahteven.`,
+      SHORT_PREP: () => "Manj kot 4 tedne do tekme: forma se ne bo dosti spremenila. Pridi spočit, začni malo počasneje in ciljni čas vzemi kot zgornjo mejo.",
+      LOW_VOLUME_MARATHON: () => "Manj kot 20 km na teden je za maraton malo.",
+      TWO_DAYS_MARATHON: () => "Dva teka na teden sta za maraton malo.",
+      HIGH_AVG_RUN: (v) => `Povprečen tek bi bil okoli ${v} km. Če zdaj ne tečeš toliko, zmanjšaj km na teden.`,
+      LOW_VOLUME_FOR_DAYS: () => "Za toliko dni je km malo, zato je tekov sprva manj. Dodajajo se, ko obseg raste.",
+      LONG_PREP: (v) => `Načrt pokrije zadnjih 20 tednov. Prej (${slWeeks(v ?? 0)}) teci lahke teke.`,
     },
+    notesTitle: "Ocena cilja",
     fuelWarnings: {
       NO_GELS: "Pijača že pokrije cilj, gelov ne potrebuješ.",
       TIGHT_INTERVAL: "Geli so manj kot 15 minut narazen. Preveri, ali je cilj za tvoj želodec previsok.",
@@ -204,6 +227,18 @@ export const T: Record<Lang, Dict> = {
       exercisesTitle: "Vaje za moč in gibljivost",
       checklistTitle: "Kontrolni seznam za tekmo",
       keepLink: "Shrani to povezavo. Z njo prideš do načrta in kljukic na kateri koli napravi.",
+      calendar: "Dodaj v koledar",
+      pdf: "Prenesi PDF",
+      preparing: "Pripravljam …",
+      exportFailed: "Datoteke ni bilo mogoče pripraviti. Poskusi znova.",
+      exportHint: "Koledar (.ics) uvoziš v Apple, Google ali Outlook koledar. PDF lahko natisneš ali kljukaš v bralniku PDF.",
+      calName: (d) => `Finisher: ${d}`,
+      pdfTitle: (d, time) => `${d} v ${time}`,
+      pdfMeta: (date, pace) => `Tekma: ${date}   Ciljni tempo: ${pace}/km`,
+      pdfPaces: "Tempi",
+      pdfTickOnline: "Kljukice lahko shranjuješ tudi na spletu:",
+      pdfGels: "Geli",
+      pdfPage: (n, of) => `${n} / ${of}`,
       errors: {
         INVALID_TOKEN: "Povezava ni veljavna. Preveri, ali si jo kopiral v celoti iz emaila.",
         NOT_PAID: "Plačilo za ta načrt še ni potrjeno. Poskusi znova čez nekaj minut.",
@@ -281,6 +316,14 @@ export const T: Record<Lang, Dict> = {
     ],
     buyCta: "Buy the full plan",
     buyNote: "One payment. You get a link to your plan by email, no account needed.",
+    buyClosed: "Purchases are not open yet. If you have a test code, enter it to open the full plan.",
+    testCode: "Test code",
+    openPlan: "Open the full plan",
+    buyErrors: {
+      INVALID_CODE: "The code is not correct.",
+      INVALID_INPUT: "Check your race details above.",
+      NETWORK: "The connection failed. Try again.",
+    },
     errors: {
       INVALID_INPUT: "Check your target time, weekly km and race date.",
       RACE_PASSED: "The race date is today or has passed. Pick a later date.",
@@ -288,18 +331,16 @@ export const T: Record<Lang, Dict> = {
       NETWORK: "The preview could not be loaded. Check your connection and try again.",
     },
     warnings: {
-      SHORT_PREP: () =>
-        "The race is less than 4 weeks away. Fitness does not change much in that time, so the plan mainly gets you to the start fresh. Run the first kilometres slightly slower than goal pace and treat the target time as a ceiling, not a must.",
-      LONG_PREP: (v) => `The race is more than 20 weeks away. The plan covers the last 20; run easy for the ${v} ${v === 1 ? "week" : "weeks"} before.`,
-      LOW_VOLUME_MARATHON: () => "Under 20 km a week is low for a marathon. Consider a longer build or a shorter race.",
-      HIGH_AVG_RUN: (v) => `At this input your average run is about ${v} km. If you don't run that much now, lower your weekly km.`,
-      TWO_DAYS_MARATHON: () => "Two runs a week is little for a marathon. Consider more days or a shorter race.",
-      LOW_VOLUME_FOR_DAYS: () => "Your weekly km is low for this many days, so the first weeks have fewer runs. More are added as volume grows.",
-      GOAL_AMBITIOUS: (v) =>
-        `Based on your recent result, about ${formatDuration(v ?? 0)} is realistic. Your target is faster, so it is ambitious. Training paces come from your fitness; you practise goal pace at the end of long runs.`,
-      LONG_RUN_SHORT: (v) =>
-        `The longest run in the plan is ${v} km, well short of the race. The plan raises volume slowly to avoid injury, so your target time may be ambitious.`,
+      GOAL_AMBITIOUS: (v) => `Your fitness points to about ${formatDuration(v ?? 0)}; your target is faster.`,
+      LONG_RUN_SHORT: (v) => `Your longest run will be ${v} km, well short of the race, so the target is ambitious.`,
+      SHORT_PREP: () => "Under 4 weeks to the race: fitness won't change much. Arrive fresh, start a little slower and treat the target as a ceiling.",
+      LOW_VOLUME_MARATHON: () => "Under 20 km a week is low for a marathon.",
+      TWO_DAYS_MARATHON: () => "Two runs a week is little for a marathon.",
+      HIGH_AVG_RUN: (v) => `Your average run would be about ${v} km. If you don't run that much now, lower your weekly km.`,
+      LOW_VOLUME_FOR_DAYS: () => "Your weekly km is low for this many days, so there are fewer runs at first. More are added as volume grows.",
+      LONG_PREP: (v) => `The plan covers the last 20 weeks. Run easy for the ${v} ${v === 1 ? "week" : "weeks"} before.`,
     },
+    notesTitle: "Goal check",
     fuelWarnings: {
       NO_GELS: "Your drink already covers the target, no gels needed.",
       TIGHT_INTERVAL: "Gels are less than 15 minutes apart. Check the target isn't too high for your stomach.",
@@ -323,6 +364,18 @@ export const T: Record<Lang, Dict> = {
       exercisesTitle: "Strength and mobility",
       checklistTitle: "Race checklist",
       keepLink: "Keep this link. It opens your plan and ticks on any device.",
+      calendar: "Add to calendar",
+      pdf: "Download PDF",
+      preparing: "Preparing …",
+      exportFailed: "The file could not be prepared. Try again.",
+      exportHint: "Import the calendar (.ics) into Apple, Google or Outlook calendar. Print the PDF or tick it in a PDF reader.",
+      calName: (d) => `Finisher: ${d}`,
+      pdfTitle: (d, time) => `${d} in ${time}`,
+      pdfMeta: (date, pace) => `Race: ${date}   Goal pace: ${pace}/km`,
+      pdfPaces: "Paces",
+      pdfTickOnline: "You can also save ticks online:",
+      pdfGels: "Gels",
+      pdfPage: (n, of) => `${n} / ${of}`,
       errors: {
         INVALID_TOKEN: "This link is not valid. Check that you copied all of it from the email.",
         NOT_PAID: "Payment for this plan is not confirmed yet. Try again in a few minutes.",

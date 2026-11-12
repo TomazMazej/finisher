@@ -17,6 +17,8 @@
     ".": "./src/index.ts",
     "./fuel": "./src/fuel.ts",
     "./format": "./src/format.ts",
-    "./dates": "./src/dates.ts"
+    "./dates": "./src/dates.ts",
+    "./schedule": "./src/schedule.ts",
+    "./ics": "./src/ics.ts"
   }
 }

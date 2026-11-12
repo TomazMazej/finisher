@@ -46,3 +46,20 @@ export async function verifyToken(token: string | null | undefined, secret: stri
   const ok = await crypto.subtle.verify("HMAC", await key(secret, "verify"), sigBytes, enc.encode(id));
   return ok ? id : null;
 }
+
+/**
+ * Testna koda za brezplačen dostop (dokler ni plačil in za lastno testiranje).
+ * Izpeljana iz TOKEN_SECRET, zato ne potrebuje svoje skrivnosti. Ob menjavi ključa se spremeni tudi koda.
+ */
+export async function testAccessCode(secret: string): Promise<string> {
+  const sig = await crypto.subtle.sign("HMAC", await key(secret, "sign"), enc.encode("test-access-v1"));
+  return b64url(sig).slice(0, 12);
+}
+
+/** Primerjava brez zgodnjega izhoda, da čas ne izda, koliko znakov se ujema. */
+export function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}

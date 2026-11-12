@@ -18,3 +18,15 @@ export function weeksUntil(today: string, raceDate: string): number | null {
   return Math.ceil((b - a) / 7);
 }
 
+
+/** Dan (število dni od 1970-01-01, UTC) nazaj v niz YYYY-MM-DD. */
+export function isoFromDay(day: number): string {
+  return new Date(day * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** Datum, premaknjen za n dni. */
+export function addDaysIso(date: string, n: number): string {
+  const d = utcDay(date);
+  if (d === null) throw new Error(`Neveljaven datum: ${date}`);
+  return isoFromDay(d + n);
+}

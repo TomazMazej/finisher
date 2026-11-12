@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { formatKm, formatPace } from "@finisher/core/format";
+  import { formatKm } from "@finisher/core/format";
+  import { sessionDetail } from "../lib/session-text";
   import type { Lang, Week } from "@finisher/core";
   import { T } from "../lib/i18n";
 
@@ -10,6 +11,7 @@
     current = false,
     done = null,
     onToggle = undefined,
+    dates = null,
   }: {
     lang: Lang;
     week: Week;
@@ -19,11 +21,15 @@
     /** opravljene postavke; null pomeni brez kljukic (predogled) */
     done?: Set<string> | null;
     onToggle?: (item: string, value: boolean) => void;
+    /** datum vsake seanse (YYYY-MM-DD), če je razpored znan */
+    dates?: string[] | null;
   } = $props();
 
   const t = $derived(T[lang]);
-  const rangeText = (min: number, max: number) =>
-    min === max ? formatPace(min) : `${formatPace(min)}–${formatPace(max)}`;
+  const dayFmt = $derived(
+    new Intl.DateTimeFormat(t.locale, { weekday: "short", day: "numeric", month: "numeric", timeZone: "UTC" }),
+  );
+  const day = (iso: string) => dayFmt.format(new Date(iso + "T00:00:00Z"));
   const itemKey = (i: number) => `w${week.number}s${i + 1}`;
 </script>
 
@@ -49,18 +55,12 @@
           />
         {/if}
         <label class="body" for={done ? key : undefined}>
-          <span class="n">{t.run(i + 1)}</span>
+          <span class="n">{dates?.[i] ? day(dates[i]!) : t.run(i + 1)}</span>
           <span class="name">{t.sessions[s.type]}</span>
           <span class="detail">
-            {#if s.type === "tempo" && s.qualityKm}
-              {t.tempoDetail(s.qualityKm, formatPace(s.pace.min))}{t.perKm}
-            {:else if s.type === "intervals" && s.reps}
-              {t.intervalDetail(s.reps, formatPace(s.pace.min))}{t.perKm}
-            {:else}
-              {rangeText(s.pace.min, s.pace.max)}{t.perKm}
-            {/if}
-            {#if s.strides}<span class="extra">{t.stridesDetail(s.strides)}</span>{/if}
-            {#if s.racePaceKm && s.racePace}<span class="extra">{t.racePaceDetail(s.racePaceKm, formatPace(s.racePace))}{t.perKm}</span>{/if}
+            {#each sessionDetail(t, s) as line, j}
+              <span class:extra={j > 0}>{line}</span>
+            {/each}
           </span>
         </label>
         <span class="km">{formatKm(s.km, lang)}<small> km</small></span>
@@ -165,8 +165,10 @@
     color: var(--ink-2);
     font-size: 0.95rem;
   }
-  .extra {
+  .detail span {
     display: block;
+  }
+  .detail .extra {
     color: var(--ink);
   }
   .km {

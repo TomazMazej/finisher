@@ -8,6 +8,9 @@
   import Bib from "./Bib.svelte";
   import WeekCard from "./WeekCard.svelte";
   import FuelLine from "./FuelLine.svelte";
+  import Notes from "./Notes.svelte";
+  import { sessionDates } from "@finisher/core/schedule";
+  import { download, planIcs } from "../lib/exports";
 
   type DistKey = "10" | "21.0975" | "42.195";
   type Loaded = Extract<FullPlanResponse, { ok: true }>;
@@ -19,6 +22,38 @@
   let error = $state<Exclude<FullPlanResponse, { ok: true }>["error"] | null>(null);
   let done = $state(new Set<string>());
   let saveError = $state(false);
+  let busy = $state<"" | "ics" | "pdf">("");
+  let exportError = $state(false);
+
+  const planUrl = location.href.split("#")[0]!;
+  const orderId = token.split(".")[0] ?? "plan";
+  const fileBase = () => `finisher-${data!.input.distanceKm}km-${data!.input.raceDate}`;
+
+  async function exportIcs() {
+    if (!data) return;
+    exportError = false;
+    try {
+      download(planIcs(data, lang, orderId, planUrl), `${fileBase()}.ics`, "text/calendar;charset=utf-8");
+    } catch {
+      exportError = true;
+    }
+  }
+
+  async function exportPdf() {
+    if (!data || busy) return;
+    busy = "pdf";
+    exportError = false;
+    try {
+      const { buildPlanPdf } = await import("../lib/pdf");
+      const bytes = await buildPlanPdf(data, lang, done, planUrl);
+      download(bytes, `${fileBase()}.pdf`, "application/pdf");
+    } catch (e) {
+      console.error(e);
+      exportError = true;
+    } finally {
+      busy = "";
+    }
+  }
 
   const t = $derived(T[lang]);
 
@@ -148,18 +183,20 @@
           <div class="bar" style:--p="{totalRuns ? (doneRuns / totalRuns) * 100 : 0}%"></div>
           <p>{t.my.progress(doneRuns, totalRuns)}</p>
         </div>
+        <div class="exports">
+          <button type="button" class="btn" onclick={exportPdf} disabled={busy !== ""}>
+            {busy === "pdf" ? t.my.preparing : t.my.pdf}
+          </button>
+          <button type="button" class="btn ghost" onclick={exportIcs}>{t.my.calendar}</button>
+        </div>
+        {#if exportError}<p class="msg" role="alert">{t.my.exportFailed}</p>{/if}
+        <p class="muted small">{t.my.exportHint}</p>
         <p class="muted small">{t.my.keepLink}</p>
       </aside>
 
       <main class="right">
-        {#if saveError || data.warnings.length}
-          <div class="msgs">
-            {#if saveError}<p class="msg" role="alert">{t.my.saveFailed}</p>{/if}
-            {#each data.warnings as w}
-              <p class="msg">{t.warnings[w.code](w.value)}</p>
-            {/each}
-          </div>
-        {/if}
+        {#if saveError}<p class="msg" role="alert">{t.my.saveFailed}</p>{/if}
+        <Notes {lang} warnings={data.warnings} />
 
         <section aria-labelledby="weeks-h">
           <h2 id="weeks-h">{t.my.weeksTitle}</h2>
@@ -171,6 +208,7 @@
                 {week}
                 range={t.my.weekRange(fmt.format(span.start), fmt.format(span.end))}
                 current={k === currentWeek}
+                dates={sessionDates(week, data.weeks.length, data.input.raceDate, data.planStart)}
                 {done}
                 onToggle={toggle}
               />
@@ -324,6 +362,32 @@
   }
   .progress {
     margin-top: 1.5rem;
+  }
+  .exports {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+  .btn {
+    min-height: 48px;
+    border: 2px solid var(--bib-blue);
+    border-radius: var(--r-ui);
+    background: var(--bib-blue);
+    color: var(--bib-blue-ink);
+    font: 700 1rem var(--text);
+    cursor: pointer;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+  .exports + .msg {
+    margin-top: 0.5rem;
   }
   .progress .bar {
     height: 10px;

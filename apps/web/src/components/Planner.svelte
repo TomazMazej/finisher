@@ -9,6 +9,7 @@
   import WeekCard from "./WeekCard.svelte";
   import VolumeBars from "./VolumeBars.svelte";
   import FuelLine from "./FuelLine.svelte";
+  import Notes from "./Notes.svelte";
 
   type DistKey = "10" | "21.0975" | "42.195";
   type Theme = "auto" | "light" | "dark";
@@ -137,6 +138,64 @@
     dist = d;
     [hours, minutes] = DEFAULT_TIME[d];
   }
+  // Nakup: dokler plačila niso povezana, cel načrt odpre testna koda (shranjena v tem brskalniku).
+  let showCode = $state(false);
+  let code = $state("");
+  let buying = $state(false);
+  let buyError = $state<"" | "INVALID_CODE" | "INVALID_INPUT" | "NETWORK">("");
+  try {
+    code = localStorage.getItem("testCode") ?? "";
+  } catch {}
+
+  async function buy() {
+    if (!plan?.ok || buying) return;
+    if (!code) {
+      showCode = true;
+      return;
+    }
+    buying = true;
+    buyError = "";
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          distanceKm,
+          targetMinutes,
+          raceDate,
+          today,
+          weeklyKm: Number(weeklyKm),
+          daysPerWeek: Number(days),
+          lang,
+          ...(recent ? { recent } : {}),
+          fuel: { carbsPerHour: Number(carbs), gelCarbs: Number(gelCarbs), drinkPerHour: Number(drink), firstGelMin: Number(firstGel) },
+          testCode: code.trim(),
+        }),
+      });
+      const body = (await res.json()) as { ok: boolean; url?: string; error?: string };
+      if (body.ok && body.url) {
+        try {
+          localStorage.setItem("testCode", code.trim());
+        } catch {}
+        location.href = body.url;
+        return;
+      }
+      showCode = true;
+      if (body.error === "INVALID_CODE") {
+        try {
+          localStorage.removeItem("testCode");
+        } catch {}
+        buyError = "INVALID_CODE";
+      } else if (body.error === "PAYMENTS_DISABLED") {
+        buyError = "";
+      } else buyError = "INVALID_INPUT";
+    } catch {
+      buyError = "NETWORK";
+    } finally {
+      buying = false;
+    }
+  }
+
   const stepKm = (delta: number) => (weeklyKm = Math.min(150, Math.max(5, (Number(weeklyKm) || 0) + delta)));
 </script>
 
@@ -256,9 +315,7 @@
       {:else if !plan.ok}
         <p class="msg">{t.errors[plan.error]}</p>
       {:else}
-        {#each plan.warnings as w}
-          <p class="msg">{t.warnings[w.code](w.value)}</p>
-        {/each}
+        <Notes {lang} warnings={plan.warnings} />
 
         <section aria-labelledby="pv-h">
           <h2 id="pv-h">{t.previewTitle}</h2>
@@ -305,8 +362,19 @@
         <ul>
           {#each t.buyItems as item}<li>{item}</li>{/each}
         </ul>
-        <button type="button" class="cta" disabled={!plan?.ok}>{t.buyCta}</button>
+        <button type="button" class="cta" disabled={!plan?.ok || buying} onclick={buy}>{t.buyCta}</button>
         <p class="hint">{t.buyNote}</p>
+        {#if showCode}
+          <form class="code" onsubmit={(e) => { e.preventDefault(); buy(); }}>
+            <p class="hint">{t.buyClosed}</p>
+            <label class="label" for="test-code">{t.testCode}</label>
+            <div class="code-row">
+              <input id="test-code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" bind:value={code} />
+              <button type="submit" class="cta small" disabled={!code.trim() || buying}>{t.openPlan}</button>
+            </div>
+            {#if buyError}<p class="msg" role="alert">{t.buyErrors[buyError]}</p>{/if}
+          </form>
+        {/if}
       </section>
 
       <p class="disc">{t.disclaimer}</p>
@@ -577,6 +645,22 @@
     color: var(--bib-blue-ink);
     font: 800 1.5rem/1 var(--display);
     cursor: pointer;
+  }
+  .code {
+    margin-top: 1rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .code-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+  }
+  .cta.small {
+    width: auto;
+    min-height: 48px;
+    padding: 0 1rem;
+    font-size: 1.1rem;
   }
   .cta:disabled {
     opacity: 0.45;

@@ -95,6 +95,10 @@ type Dict = {
     pdf: string;
     preparing: string;
     exportFailed: string;
+    sendLabel: string;
+    send: string;
+    sending: string;
+    sendResult: Record<"SENT" | "INVALID_EMAIL" | "EMAIL_DISABLED" | "TOO_MANY" | "TOO_SOON" | "SEND_FAILED", string>;
     exportHint: string;
     calName: (dist: string) => string;
     pdfTitle: (dist: string, time: string) => string;
@@ -248,6 +252,17 @@ export const T: Record<Lang, Dict> = {
       pdf: "Prenesi PDF",
       preparing: "Pripravljam …",
       exportFailed: "Datoteke ni bilo mogoče pripraviti. Poskusi znova.",
+      sendLabel: "Pošlji povezavo do načrta na email",
+      send: "Pošlji",
+      sending: "Pošiljam …",
+      sendResult: {
+        SENT: "Poslano. Preveri tudi mapo z neželeno pošto.",
+        INVALID_EMAIL: "Preveri email naslov.",
+        EMAIL_DISABLED: "Pošiljanje emailov še ni vklopljeno. Do takrat si to stran shrani med zaznamke.",
+        TOO_MANY: "Povezava je bila poslana že večkrat. Za pomoč piši na mazejdev@gmail.com.",
+        TOO_SOON: "Počakaj minuto in poskusi znova.",
+        SEND_FAILED: "Pošiljanje ni uspelo. Poskusi znova kasneje.",
+      },
       exportHint: "Koledar (.ics) uvoziš v Apple, Google ali Outlook koledar. PDF lahko natisneš ali kljukaš v bralniku PDF.",
       calName: (d) => `Finisher: ${d}`,
       pdfTitle: (d, time) => `${d} v ${time}`,
@@ -397,6 +412,17 @@ export const T: Record<Lang, Dict> = {
       pdf: "Download PDF",
       preparing: "Preparing …",
       exportFailed: "The file could not be prepared. Try again.",
+      sendLabel: "Email me the link to my plan",
+      send: "Send",
+      sending: "Sending …",
+      sendResult: {
+        SENT: "Sent. Check your spam folder too.",
+        INVALID_EMAIL: "Check the email address.",
+        EMAIL_DISABLED: "Email sending is not switched on yet. Bookmark this page for now.",
+        TOO_MANY: "The link has already been sent several times. For help, write to mazejdev@gmail.com.",
+        TOO_SOON: "Wait a minute and try again.",
+        SEND_FAILED: "Sending failed. Try again later.",
+      },
       exportHint: "Import the calendar (.ics) into Apple, Google or Outlook calendar. Print the PDF or tick it in a PDF reader.",
       calName: (d) => `Finisher: ${d}`,
       pdfTitle: (d, time) => `${d} in ${time}`,

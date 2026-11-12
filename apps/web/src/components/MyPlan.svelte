@@ -58,6 +58,29 @@
 
   const t = $derived(T[lang]);
 
+  // Pošlji povezavo do načrta na email (Resend; dokler ni vklopljen, strežnik vrne EMAIL_DISABLED).
+  let sendTo = $state("");
+  let sending = $state(false);
+  let sendState = $state<"" | "SENT" | "INVALID_EMAIL" | "EMAIL_DISABLED" | "TOO_MANY" | "TOO_SOON" | "SEND_FAILED">("");
+  async function sendLink() {
+    if (sending || !sendTo.trim()) return;
+    sending = true;
+    sendState = "";
+    try {
+      const res = await fetch(`/api/send-link?t=${encodeURIComponent(token)}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: sendTo.trim() }),
+      });
+      const body = (await res.json()) as { ok: boolean; error?: typeof sendState };
+      sendState = body.ok ? "SENT" : (body.error ?? "SEND_FAILED");
+    } catch {
+      sendState = "SEND_FAILED";
+    } finally {
+      sending = false;
+    }
+  }
+
   // Po vrnitvi s Stripe lahko webhook zamudi nekaj sekund: počakaj do okoli 1 minute.
   const fromCheckout = new URLSearchParams(location.search).get("paid") === "1";
   let confirming = $state(false);
@@ -81,6 +104,7 @@
       if (fromCheckout) history.replaceState(null, "", location.pathname + `?t=${encodeURIComponent(token)}`);
       data = body;
       done = new Set(body.done);
+      if (body.email && !sendTo) sendTo = body.email;
       try {
         const saved = localStorage.getItem("lang");
         lang = saved === "sl" || saved === "en" ? saved : body.lang;
@@ -206,6 +230,16 @@
         {#if exportError}<p class="msg" role="alert">{t.my.exportFailed}</p>{/if}
         <p class="muted small">{t.my.exportHint}</p>
         <p class="muted small">{t.my.keepLink}</p>
+        <form class="send" onsubmit={(e) => { e.preventDefault(); sendLink(); }}>
+          <label class="small" for="send-to">{t.my.sendLabel}</label>
+          <div class="send-row">
+            <input id="send-to" type="email" autocomplete="email" bind:value={sendTo} />
+            <button type="submit" class="btn ghost" disabled={sending || !sendTo.trim()}>{sending ? t.my.sending : t.my.send}</button>
+          </div>
+          {#if sendState}
+            <p class={sendState === "SENT" ? "ok small" : "msg"} role="status">{t.my.sendResult[sendState]}</p>
+          {/if}
+        </form>
       </aside>
 
       <main class="right">
@@ -505,5 +539,33 @@
   .check .checked label {
     color: var(--ink-2);
     text-decoration: line-through;
+  }
+  .send {
+    display: grid;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+  }
+  .send-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+  }
+  .send-row input {
+    min-height: 44px;
+    min-width: 0;
+    padding: 0 0.75rem;
+    border: 2px solid var(--line);
+    border-radius: var(--r-ui);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+  }
+  .send-row input:focus-visible {
+    outline: 3px solid var(--bib-blue);
+    outline-offset: 1px;
+  }
+  .ok {
+    color: var(--ink);
+    font-weight: 700;
   }
 </style>

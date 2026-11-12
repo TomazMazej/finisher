@@ -3,6 +3,7 @@ import { env } from "cloudflare:workers";
 import { verifyStripeSignature, type CheckoutSession } from "../../lib/server/stripe";
 import { getOrder, logEvent, parseInput } from "../../lib/server/orders";
 import { json } from "../../lib/server/http";
+import { sendPlanLink } from "../../lib/server/send-link";
 
 export const prerender = false;
 
@@ -10,7 +11,7 @@ export const prerender = false;
  * Stripe sporoči zaključen nakup. Samo tu se naročilo označi kot plačano.
  * Dogodki: checkout.session.completed in checkout.session.async_payment_succeeded.
  */
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, url }) => {
   const raw = await request.text();
   if (raw.length > 256_000) return json({ ok: false }, 413);
   const ok = await verifyStripeSignature(raw, request.headers.get("stripe-signature"), env.STRIPE_WEBHOOK_SECRET ?? "");
@@ -44,5 +45,11 @@ export const POST: APIRoute = async ({ request }) => {
     .run();
   const input = parseInput(order);
   await logEvent(env.DB, "paid", order.lang, input ? String(input.distanceKm) : undefined);
+  // Povezavo do načrta pošlje na email iz plačila (ko je pošiljanje vklopljeno). Napaka ne ustavi webhooka.
+  const to = s.customer_details?.email;
+  if (to && input) {
+    const r = await sendPlanLink(env, { orderId: order.id, lang: order.lang, distanceKm: input.distanceKm, to, origin: url.origin });
+    if (r !== "SENT" && r !== "EMAIL_DISABLED") console.error("webhook send link", r);
+  }
   return json({ ok: true });
 };

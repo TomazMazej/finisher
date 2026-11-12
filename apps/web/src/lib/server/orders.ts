@@ -8,11 +8,12 @@ export interface OrderRow {
   lang: Lang;
   input_json: string;
   plan_start: string;
+  email: string | null;
 }
 
 export async function getOrder(db: D1Database, id: string): Promise<OrderRow | null> {
   return db
-    .prepare("SELECT id, status, lang, input_json, plan_start FROM orders WHERE id = ?")
+    .prepare("SELECT id, status, lang, input_json, plan_start, email FROM orders WHERE id = ?")
     .bind(id)
     .first<OrderRow>();
 }

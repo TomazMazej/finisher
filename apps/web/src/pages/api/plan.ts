@@ -38,5 +38,6 @@ export const GET: APIRoute = async ({ url }) => {
     weeks: plan.weeks,
     ...(plan.predictedMinutes ? { predictedMinutes: plan.predictedMinutes } : {}),
     done,
+    ...(order.email ? { email: order.email } : {}),
   });
 };

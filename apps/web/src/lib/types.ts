@@ -58,6 +58,8 @@ export type FullPlanResponse =
       predictedMinutes?: number;
       /** opravljene postavke: "w3s2" (teden 3, tek 2) ali "c4" (kontrolni seznam, točka 4) */
       done: string[];
+      /** email iz plačila, če obstaja */
+      email?: string;
     }
   | { ok: false; error: "INVALID_TOKEN" | "NOT_PAID" | "NOT_FOUND" | "PLAN_ERROR" | "NETWORK" };
 

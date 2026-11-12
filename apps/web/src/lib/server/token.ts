@@ -60,7 +60,8 @@ export async function testAccessCode(secret: string): Promise<string> {
  * Ali je vnesena testna koda veljavna: lastna koda iz skrivnosti TEST_CODE
  * (velike in male črke niso pomembne) ali koda, izpeljana iz TOKEN_SECRET.
  */
-const FIXED_TEST_CODE_SHA256 = "fb5fabb77c485bfe8c3ff09b3901126c2f139efa67d15c25677fec49b8ea6950";
+/** Stalne kode za brezplačen dostop (MAZEJTEST, TESTMAZEJ); v repozitoriju je samo SHA-256 malih črk. */
+const FIXED_TEST_CODE_SHA256 = ["fb5fabb77c485bfe8c3ff09b3901126c2f139efa67d15c25677fec49b8ea6950", "687a9d6b5a92158ac0daeebf38fd41ea6fcd6e637d000366aee54b29c0fa6bda"];
 
 export async function isTestCode(input: string, secret: string, own?: string): Promise<boolean> {
   const code = input.trim();
@@ -70,7 +71,7 @@ export async function isTestCode(input: string, secret: string, own?: string): P
   // Stalna testna koda; v repozitoriju je samo njen SHA-256 (male črke).
   const hash = await crypto.subtle.digest("SHA-256", enc.encode(code.toLowerCase()));
   const hex = [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
-  if (safeEqual(hex, FIXED_TEST_CODE_SHA256)) return true;
+  if (FIXED_TEST_CODE_SHA256.some((h) => safeEqual(hex, h))) return true;
   return safeEqual(code, await testAccessCode(secret));
 }
 

@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import { generatePlan } from "@finisher/core";
 import { buildPreview, effectiveToday, parseRequest } from "../../lib/server/preview";
 import { isTestCode, newOrderId, signToken } from "../../lib/server/token";
-import { createCheckoutSession, stripeEnabled } from "../../lib/server/stripe";
+import { createCheckoutSession, findPromotionCode, stripeEnabled } from "../../lib/server/stripe";
 import { logEvent } from "../../lib/server/orders";
 import { json } from "../../lib/server/http";
 import type { StoredInput } from "../../lib/types";
@@ -34,10 +34,22 @@ export const POST: APIRoute = async ({ request, url }) => {
   // Izrecno soglasje s pogoji in takojšnjo dostavo digitalne vsebine.
   if (body.consent !== true) return json({ ok: false, error: "CONSENT_REQUIRED" }, 400);
 
-  const code = typeof body.testCode === "string" ? body.testCode.trim() : "";
+  // Promocijska koda (neobvezna): brezplačen dostop, koda ustvarjalca (ref_codes) ali Stripov popust.
+  const raw = body.promoCode ?? body.testCode;
+  const code = typeof raw === "string" ? raw.trim().slice(0, 40) : "";
   const isTest = code ? await isTestCode(code, env.TOKEN_SECRET, env.TEST_CODE) : false;
-  if (code && !isTest) return json({ ok: false, error: "INVALID_CODE" }, 403);
-  if (!isTest && !stripeEnabled(env)) return json({ ok: false, error: "PAYMENTS_DISABLED" }, 403);
+  const payments = stripeEnabled(env);
+  let refCode: string | null = null;
+  let promotionCodeId: string | undefined;
+  if (code && !isTest) {
+    const ref = await env.DB.prepare("SELECT code FROM ref_codes WHERE code = ? AND active = 1")
+      .bind(code.toUpperCase())
+      .first<{ code: string }>();
+    refCode = ref?.code ?? null;
+    if (payments) promotionCodeId = (await findPromotionCode(env, code)) ?? undefined;
+    if (!refCode && !promotionCodeId) return json({ ok: false, error: "INVALID_CODE" }, 403);
+  }
+  if (!isTest && !payments) return json({ ok: false, error: "PAYMENTS_DISABLED" }, 403);
 
   const f = (body.fuel ?? {}) as Record<string, unknown>;
   const fuel = {
@@ -74,9 +86,9 @@ export const POST: APIRoute = async ({ request, url }) => {
   }
 
   await env.DB.prepare(
-    `INSERT INTO orders (id, status, lang, input_json, plan_start, provider) VALUES (?, 'pending', ?, ?, ?, 'stripe')`,
+    `INSERT INTO orders (id, status, lang, input_json, plan_start, provider, ref_code) VALUES (?, 'pending', ?, ?, ?, 'stripe', ?)`,
   )
-    .bind(id, req.lang, JSON.stringify(input), today)
+    .bind(id, req.lang, JSON.stringify(input), today, refCode)
     .run();
   try {
     const session = await createCheckoutSession(env, {
@@ -84,6 +96,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       lang: req.lang,
       successUrl: `${url.origin}${planPath}&paid=1`,
       cancelUrl: `${url.origin}/?cancelled=1`,
+      promotionCodeId,
     });
     if (!session.url) throw new Error("Stripe brez URL");
     await logEvent(env.DB, "checkout", req.lang, String(req.distanceKm));

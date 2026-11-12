@@ -68,11 +68,8 @@ type Dict = {
   buyCta: string;
   buyNote: string;
   consent: { before: string; terms: string; after: string };
-  buyClosed: string;
-  testCode: string;
-  openPlan: string;
-  buyErrors: Record<"INVALID_CODE" | "INVALID_INPUT" | "NETWORK" | "PAYMENT_ERROR", string>;
-  haveCode: string;
+  promoCode: string;
+  buyErrors: Record<"INVALID_CODE" | "INVALID_INPUT" | "NETWORK" | "PAYMENT_ERROR" | "PAYMENTS_DISABLED", string>;
   errors: Record<"INVALID_INPUT" | "RACE_PASSED" | "NO_DATE" | "NETWORK", string>;
   warnings: Record<WarningCode, (v?: number, limit?: number) => string>;
   notesTitle: string;
@@ -197,12 +194,10 @@ export const T: Record<Lang, Dict> = {
       after: " in želim dostop takoj. Vem, da s tem izgubim pravico do odstopa v 14 dneh.",
     },
     buyNote: "Enkratno plačilo prek Stripe, brez registracije. Po plačilu se odpre tvoj načrt.",
-    buyClosed: "Če imaš testno kodo, jo vpiši in odpri cel načrt.",
-    haveCode: "Imam testno kodo",
-    testCode: "Testna koda",
-    openPlan: "Odpri cel načrt",
+    promoCode: "Promocijska koda (neobvezno)",
     buyErrors: {
-      INVALID_CODE: "Koda ni pravilna.",
+      INVALID_CODE: "Te promocijske kode ne poznamo. Preveri jo ali pusti polje prazno.",
+      PAYMENTS_DISABLED: "Plačila še niso odprta. Z veljavno promocijsko kodo načrt odpreš že zdaj.",
       INVALID_INPUT: "Preveri podatke o tekmi zgoraj.",
       NETWORK: "Povezava ni uspela. Poskusi znova.",
       PAYMENT_ERROR: "Plačila trenutno ni mogoče začeti. Poskusi čez nekaj minut.",
@@ -348,12 +343,10 @@ export const T: Record<Lang, Dict> = {
       after: " and want access right away. I understand that I lose the 14-day right of withdrawal.",
     },
     buyNote: "One payment via Stripe, no account needed. Your plan opens after payment.",
-    buyClosed: "If you have a test code, enter it to open the full plan.",
-    haveCode: "I have a test code",
-    testCode: "Test code",
-    openPlan: "Open the full plan",
+    promoCode: "Promo code (optional)",
     buyErrors: {
-      INVALID_CODE: "The code is not correct.",
+      INVALID_CODE: "We don't recognise this promo code. Check it or leave the field empty.",
+      PAYMENTS_DISABLED: "Payments are not open yet. A valid promo code opens your plan now.",
       INVALID_INPUT: "Check your race details above.",
       NETWORK: "The connection failed. Try again.",
       PAYMENT_ERROR: "Payment cannot start right now. Try again in a few minutes.",

@@ -25,7 +25,7 @@ export interface CheckoutSession {
 
 export async function createCheckoutSession(
   e: StripeEnv,
-  p: { orderId: string; lang: "sl" | "en"; successUrl: string; cancelUrl: string },
+  p: { orderId: string; lang: "sl" | "en"; successUrl: string; cancelUrl: string; promotionCodeId?: string },
 ): Promise<CheckoutSession> {
   const body = new URLSearchParams({
     mode: "payment",
@@ -39,6 +39,7 @@ export async function createCheckoutSession(
     success_url: p.successUrl,
     cancel_url: p.cancelUrl,
   });
+  if (p.promotionCodeId) body.set("discounts[0][promotion_code]", p.promotionCodeId);
   const res = await fetch(`${API}/checkout/sessions`, {
     method: "POST",
     headers: {
@@ -52,6 +53,15 @@ export async function createCheckoutSession(
   const json = (await res.json()) as CheckoutSession & { error?: { message?: string } };
   if (!res.ok) throw new Error(`Stripe ${res.status}: ${json.error?.message ?? "napaka"}`);
   return json;
+}
+
+/** Aktivna Stripe promocijska koda z istim imenom (popust), sicer null. */
+export async function findPromotionCode(e: StripeEnv, code: string): Promise<string | null> {
+  const q = new URLSearchParams({ code, active: "true", limit: "1" });
+  const res = await fetch(`${API}/promotion_codes?${q}`, { headers: { authorization: `Bearer ${e.STRIPE_SECRET_KEY}` } });
+  if (!res.ok) return null;
+  const json = (await res.json()) as { data?: { id: string }[] };
+  return json.data?.[0]?.id ?? null;
 }
 
 const hex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");

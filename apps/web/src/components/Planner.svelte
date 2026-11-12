@@ -140,14 +140,13 @@
     dist = d;
     [hours, minutes] = DEFAULT_TIME[d];
   }
-  // Nakup: dokler plačila niso povezana, cel načrt odpre testna koda (shranjena v tem brskalniku).
-  let showCode = $state(false);
+  // Nakup. Neobvezna promocijska koda: brezplačen dostop, popust ali koda ustvarjalca.
   let code = $state("");
   let buying = $state(false);
   let consent = $state(false);
-  let buyError = $state<"" | "INVALID_CODE" | "INVALID_INPUT" | "NETWORK" | "PAYMENT_ERROR">("");
+  let buyError = $state<"" | "INVALID_CODE" | "INVALID_INPUT" | "NETWORK" | "PAYMENT_ERROR" | "PAYMENTS_DISABLED">("");
   try {
-    code = localStorage.getItem("testCode") ?? "";
+    code = localStorage.getItem("promoCode") ?? localStorage.getItem("testCode") ?? "";
   } catch {}
 
   async function buy() {
@@ -168,26 +167,27 @@
           lang,
           ...(recent ? { recent } : {}),
           fuel: { carbsPerHour: Number(carbs), gelCarbs: Number(gelCarbs), drinkPerHour: Number(drink), firstGelMin: Number(firstGel) },
-          ...(code.trim() ? { testCode: code.trim() } : {}),
+          ...(code.trim() ? { promoCode: code.trim() } : {}),
           consent: true,
         }),
       });
       const body = (await res.json()) as { ok: boolean; url?: string; error?: string };
       if (body.ok && body.url) {
+        // Kodo za brezplačen dostop si zapomni v tem brskalniku.
         try {
-          if (code.trim()) localStorage.setItem("testCode", code.trim());
+          if (code.trim() && body.url.startsWith("/moj-nacrt")) localStorage.setItem("promoCode", code.trim());
         } catch {}
         location.href = body.url;
         return;
       }
-      showCode = true;
       if (body.error === "INVALID_CODE") {
         try {
+          localStorage.removeItem("promoCode");
           localStorage.removeItem("testCode");
         } catch {}
         buyError = "INVALID_CODE";
       } else if (body.error === "PAYMENTS_DISABLED") {
-        buyError = "";
+        buyError = "PAYMENTS_DISABLED";
       } else if (body.error === "PAYMENT_ERROR") {
         buyError = "PAYMENT_ERROR";
       } else buyError = "INVALID_INPUT";
@@ -374,23 +374,21 @@
             {t.consent.before}<a href={lang === "sl" ? "/pogoji" : "/en/terms"}>{t.consent.terms}</a>{t.consent.after}
           </span>
         </label>
+        <div class="code">
+          <label class="label" for="promo-code">{t.promoCode}</label>
+          <input
+            id="promo-code"
+            type="text"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            bind:value={code}
+            oninput={() => buyError === "INVALID_CODE" && (buyError = "")}
+          />
+        </div>
         <button type="button" class="cta" disabled={!plan?.ok || buying || !consent} onclick={buy}>{t.buyCta}</button>
         <p class="hint">{t.buyNote}</p>
-        {#if buyError && !showCode}<p class="msg" role="alert">{t.buyErrors[buyError]}</p>{/if}
-        {#if !showCode}
-          <button type="button" class="linkish" onclick={() => (showCode = true)}>{t.haveCode}</button>
-        {/if}
-        {#if showCode}
-          <form class="code" onsubmit={(e) => { e.preventDefault(); buy(); }}>
-            <p class="hint">{t.buyClosed}</p>
-            <label class="label" for="test-code">{t.testCode}</label>
-            <div class="code-row">
-              <input id="test-code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" bind:value={code} />
-              <button type="submit" class="cta small" disabled={!code.trim() || buying || !consent}>{t.openPlan}</button>
-            </div>
-            {#if buyError}<p class="msg" role="alert">{t.buyErrors[buyError]}</p>{/if}
-          </form>
-        {/if}
+        {#if buyError}<p class="msg" role="alert">{t.buyErrors[buyError]}</p>{/if}
       </section>
 
       <p class="disc">{t.disclaimer}</p>
@@ -667,14 +665,12 @@
     cursor: pointer;
   }
   .code {
-    margin-top: 1rem;
+    margin: 0.25rem 0 1rem;
     display: grid;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
-  .code-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0.5rem;
+  .code input {
+    text-transform: uppercase;
   }
   .cta.small {
     width: auto;
@@ -711,19 +707,5 @@
   }
   .consent a {
     color: var(--bib-blue);
-  }
-  .linkish {
-    background: none;
-    border: 0;
-    padding: 0.25rem 0;
-    color: var(--ink-2);
-    text-decoration: underline;
-    font: inherit;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-  .linkish:focus-visible {
-    outline: 3px solid var(--bib-blue);
-    outline-offset: 2px;
   }
 </style>

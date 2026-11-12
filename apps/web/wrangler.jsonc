@@ -5,6 +5,8 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   // ID cene ni skrivnost. Testni način; za živi način zamenjaj z živim price_...
+  // spremenljivke, dodane v nadzorni plošči, ob objavi ostanejo
+  "keep_vars": true,
   "vars": { "STRIPE_PRICE_ID": "price_1Ub0g2FKWUikEeWoXtWWEOzF" },
   "d1_databases": [
     {

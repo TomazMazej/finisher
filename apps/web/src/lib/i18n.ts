@@ -25,6 +25,8 @@ type Dict = {
   recentLabel: string;
   recentHint: string;
   recentNone: string;
+  recentHour: string;
+  recentHourLabel: string;
   recentMin: string;
   recentSec: string;
   bibPredicted: (time: string) => string;
@@ -142,6 +144,8 @@ export const T: Record<Lang, Dict> = {
     recentLabel: "Nedavni rezultat (neobvezno)",
     recentHint: "Tekma ali tek na polno v zadnjih 6 tednih. Iz njega ocenimo tvojo formo in tempe treningov.",
     recentNone: "Brez",
+    recentHour: "h",
+    recentHourLabel: "ure",
     recentMin: "min",
     recentSec: "s",
     bibPredicted: (t) => `Ocena po tvoji formi: ${t}`,
@@ -291,6 +295,8 @@ export const T: Record<Lang, Dict> = {
     recentLabel: "Recent result (optional)",
     recentHint: "A race or all-out run in the last 6 weeks. We use it to estimate your fitness and training paces.",
     recentNone: "None",
+    recentHour: "h",
+    recentHourLabel: "hours",
     recentMin: "min",
     recentSec: "s",
     bibPredicted: (t) => `Estimate from your fitness: ${t}`,

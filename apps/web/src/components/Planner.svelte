@@ -49,6 +49,7 @@
   let days = $state(4);
   // Neobvezen nedavni rezultat: razdalja "" pomeni brez.
   let recentDist = $state<"" | "5" | "10" | "21.0975" | "42.195">("");
+  let recentH = $state<number | null>(null);
   let recentMin = $state<number | null>(null);
   let recentSec = $state<number | null>(null);
   let carbs = $state(60);
@@ -61,7 +62,7 @@
   const targetMinutes = $derived((Number(hours) || 0) * 60 + (Number(minutes) || 0));
   const weeks = $derived(raceDate ? weeksUntil(today, raceDate) : null);
   const recent = $derived.by(() => {
-    const m = (Number(recentMin) || 0) + (Number(recentSec) || 0) / 60;
+    const m = (Number(recentH) || 0) * 60 + (Number(recentMin) || 0) + (Number(recentSec) || 0) / 60;
     return recentDist && m > 0 ? { distanceKm: Number(recentDist), minutes: m } : undefined;
   });
 
@@ -294,7 +295,11 @@
                 <option value="42.195">{t.distanceShort["42.195"]}</option>
               </select>
               <label>
-                <input type="number" inputmode="numeric" min="0" max="400" bind:value={recentMin} disabled={!recentDist} />
+                <input type="number" inputmode="numeric" min="0" max="9" bind:value={recentH} disabled={!recentDist} aria-label={t.recentHourLabel} />
+                <span>{t.recentHour}</span>
+              </label>
+              <label>
+                <input type="number" inputmode="numeric" min="0" max="59" bind:value={recentMin} disabled={!recentDist} />
                 <span>{t.recentMin}</span>
               </label>
               <label>
@@ -543,9 +548,12 @@
 
   .recent {
     display: grid;
-    grid-template-columns: 1.3fr 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
     align-items: center;
+  }
+  .recent select {
+    grid-column: 1 / -1;
   }
   .recent label {
     display: flex;

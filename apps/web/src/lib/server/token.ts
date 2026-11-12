@@ -56,6 +56,18 @@ export async function testAccessCode(secret: string): Promise<string> {
   return b64url(sig).slice(0, 12);
 }
 
+/**
+ * Ali je vnesena testna koda veljavna: lastna koda iz skrivnosti TEST_CODE
+ * (velike in male črke niso pomembne) ali koda, izpeljana iz TOKEN_SECRET.
+ */
+export async function isTestCode(input: string, secret: string, own?: string): Promise<boolean> {
+  const code = input.trim();
+  if (!code) return false;
+  const mine = (own ?? "").trim();
+  if (mine.length >= 6 && safeEqual(code.toLowerCase(), mine.toLowerCase())) return true;
+  return safeEqual(code, await testAccessCode(secret));
+}
+
 /** Primerjava brez zgodnjega izhoda, da čas ne izda, koliko znakov se ujema. */
 export function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;

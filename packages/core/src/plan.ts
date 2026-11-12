@@ -46,6 +46,11 @@ export interface Session {
   racePaceKm?: number;
   /** ciljni tempo tekme (min/km) za racePaceKm */
   racePace?: number;
+  /** tempo in intervali: km ogrevanja in ohlajanja v lahkem tempu */
+  warmKm?: number;
+  coolKm?: number;
+  /** tempo in intervali: lahek tempo za ogrevanje, ohlajanje in odmore */
+  easyPace?: PaceRange;
 }
 
 export interface Week {
@@ -128,6 +133,8 @@ export const RULES = {
   tempoPace: { tenk: 1.06, half: 0.97, full: 0.94 } as Record<DistanceClass, number>,
   intervalPace: { tenk: 0.97, half: 0.93, full: 0.88 } as Record<DistanceClass, number>,
   intervalRepM: 800,
+  /** 2 min lahkega teka med ponovitvami je okoli 0,3 km */
+  intervalJogKm: 0.3,
   intervalReps: [3, 6] as const,
   raceWeekEasyShare: 0.12,
   highAvgRunKm: 12,
@@ -296,14 +303,22 @@ function trainingWeek(
       const [lo, hi] = RULES.intervalReps;
       const repKm = RULES.intervalRepM / 1000;
       // Ponovitve + 2 min lahkega teka vmes (okoli 0,3 km) morajo skupaj z ogrevanjem in ohlajanjem pasti v trening.
-      const fit = Math.floor((workKm + 0.3) / (repKm + 0.3));
+      const fit = Math.floor((workKm + RULES.intervalJogKm) / (repKm + RULES.intervalJogKm));
       const reps = clamp(Math.round((quality * 0.4) / repKm), lo, Math.max(lo, Math.min(hi, fit)));
-      return { type: "intervals", km: quality, pace: fixed(p.interval), reps, repM: RULES.intervalRepM };
+      const restKm = quality - reps * repKm - (reps - 1) * RULES.intervalJogKm;
+      return { type: "intervals", km: quality, pace: fixed(p.interval), reps, repM: RULES.intervalRepM, ...warmCool(restKm), easyPace: p.easy };
     }
     const tshare = recovery ? RULES.tempoShare.recovery : RULES.tempoShare.normal;
     const qualityKm = clamp(Math.round(quality * tshare), 1, workKm);
-    return { type: "tempo", km: quality, pace: fixed(p.tempo), qualityKm };
+    return { type: "tempo", km: quality, pace: fixed(p.tempo), qualityKm, ...warmCool(quality - qualityKm), easyPace: p.easy };
   });
+}
+
+/** Razdeli lahke kilometre na ogrevanje (večji del) in ohlajanje, vsaj 1 km vsakega. */
+function warmCool(restKm: number): { warmKm: number; coolKm: number } {
+  const total = Math.max(2, Math.round(restKm));
+  const warmKm = Math.ceil(total / 2);
+  return { warmKm, coolKm: total - warmKm };
 }
 
 function raceWeek(distanceKm: number, peakKm: number, days: DaysPerWeek, p: Paces): Session[] {

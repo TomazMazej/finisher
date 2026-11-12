@@ -41,6 +41,9 @@ type Dict = {
   sessions: Record<SessionType, string>;
   tempoDetail: (q: number, pace: string) => string;
   intervalDetail: (reps: number, pace: string) => string;
+  warmDetail: (km: number, pace: string) => string;
+  coolDetail: (km: number) => string;
+  jogDetail: string;
   perKm: string;
   volumeTitle: string;
   volumeIntro: (n: number) => string;
@@ -152,6 +155,9 @@ export const T: Record<Lang, Dict> = {
     sessions: { easy: "Lahek tek", tempo: "Tempo", intervals: "Intervali", long: "Dolgi tek", race: "Tekma" },
     tempoDetail: (q, pace) => `${q} km v tempu ${pace}`,
     intervalDetail: (reps, pace) => `${reps} × 800 m v tempu ${pace}`,
+    warmDetail: (km, pace) => `${km} km ogrevanja, lahko ${pace}`,
+    coolDetail: (km) => `${km} km ohlajanja, lahko`,
+    jogDetail: "vmes 2 min lahkega teka",
     perKm: "/km",
     volumeTitle: "Obseg do tekme",
     volumeIntro: (n) => `${slWeeks(n)} po tednih. Vsak četrti teden je lažji, pred tekmo se obseg zmanjša.`,
@@ -290,6 +296,9 @@ export const T: Record<Lang, Dict> = {
     sessions: { easy: "Easy run", tempo: "Tempo", intervals: "Intervals", long: "Long run", race: "Race" },
     tempoDetail: (q, pace) => `${q} km at ${pace}`,
     intervalDetail: (reps, pace) => `${reps} × 800 m at ${pace}`,
+    warmDetail: (km, pace) => `${km} km warm-up, easy ${pace}`,
+    coolDetail: (km) => `${km} km cool-down, easy`,
+    jogDetail: "2 min easy jog between",
     perKm: "/km",
     volumeTitle: "Volume to race day",
     volumeIntro: (n) => `${n} weeks, week by week. Every fourth week is easier, and volume drops before the race.`,

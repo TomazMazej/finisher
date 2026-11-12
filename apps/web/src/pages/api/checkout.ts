@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { generatePlan } from "@finisher/core";
 import { buildPreview, effectiveToday, parseRequest } from "../../lib/server/preview";
-import { newOrderId, safeEqual, signToken, testAccessCode } from "../../lib/server/token";
+import { isTestCode, newOrderId, signToken } from "../../lib/server/token";
 import { json } from "../../lib/server/http";
 import type { StoredInput } from "../../lib/types";
 
@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   const code = typeof body.testCode === "string" ? body.testCode.trim() : "";
   if (!code) return json({ ok: false, error: "PAYMENTS_DISABLED" }, 403);
-  if (!safeEqual(code, await testAccessCode(env.TOKEN_SECRET))) return json({ ok: false, error: "INVALID_CODE" }, 403);
+  if (!(await isTestCode(code, env.TOKEN_SECRET, env.TEST_CODE))) return json({ ok: false, error: "INVALID_CODE" }, 403);
 
   const f = (body.fuel ?? {}) as Record<string, unknown>;
   const fuel = {

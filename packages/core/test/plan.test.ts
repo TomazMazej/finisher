@@ -323,6 +323,18 @@ describe("posebni primeri", () => {
     expect(predictMinutes({ distanceKm: 10, minutes: 60 }, 10)).toBe(60);
   });
 
+  it("tempo in intervali imajo ogrevanje in ohlajanje", () => {
+    const r = ok(input({ distanceKm: 21.0975, targetMinutes: 110, weeklyKm: 35, weeks: 14 }));
+    const q = r.weeks.flatMap((w) => w.sessions).filter((x) => x.type === "tempo" || x.type === "intervals");
+    expect(q.length).toBeGreaterThan(0);
+    for (const x of q) {
+      expect(x.warmKm).toBeGreaterThanOrEqual(1);
+      expect(x.coolKm).toBeGreaterThanOrEqual(1);
+      expect(x.easyPace).toBeDefined();
+      if (x.type === "tempo") expect(x.warmKm! + x.coolKm! + x.qualityKm!).toBe(x.km);
+    }
+  });
+
   it("GOAL_AMBITIOUS glede na čas priprave", () => {
     const codes = (target: number, weeks: number, recent: { distanceKm: number; minutes: number }) =>
       ok(input({ distanceKm: 21.0975, targetMinutes: target, weeklyKm: 30, weeks, recent })).warnings.map((w) => w.code);

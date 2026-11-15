@@ -90,7 +90,11 @@ type Dict = {
     stretch: string;
     exercisesTitle: string;
     checklistTitle: string;
-    keepLink: string;
+    keepTitle: string;
+    keepText: string;
+    keepHelp: string;
+    copy: string;
+    copied: string;
     calendar: string;
     pdf: string;
     preparing: string;
@@ -247,7 +251,11 @@ export const T: Record<Lang, Dict> = {
       stretch: "Raztezanje po teku",
       exercisesTitle: "Vaje za moč in gibljivost",
       checklistTitle: "Kontrolni seznam za tekmo",
-      keepLink: "Shrani to povezavo. Z njo prideš do načrta in kljukic na kateri koli napravi.",
+      keepTitle: "Shrani povezavo do načrta",
+      keepText: "Ta povezava je tvoj dostop do načrta in kljukic na kateri koli napravi. Brez nje načrta ne odpreš.",
+      keepHelp: "Dodaj stran med zaznamke ali si povezavo pošlji. Povezava je tudi v PDF in v vsakem dogodku v koledarju. Če jo izgubiš, piši na mazejdev@gmail.com z naslova, s katerim si plačal.",
+      copy: "Kopiraj",
+      copied: "Kopirano",
       calendar: "Dodaj v koledar",
       pdf: "Prenesi PDF",
       preparing: "Pripravljam …",
@@ -407,7 +415,11 @@ export const T: Record<Lang, Dict> = {
       stretch: "Stretch after running",
       exercisesTitle: "Strength and mobility",
       checklistTitle: "Race checklist",
-      keepLink: "Keep this link. It opens your plan and ticks on any device.",
+      keepTitle: "Save the link to your plan",
+      keepText: "This link is your access to the plan and ticks on any device. You can't open the plan without it.",
+      keepHelp: "Bookmark the page or send the link to yourself. It is also in the PDF and in every calendar event. If you lose it, write to mazejdev@gmail.com from the address you paid with.",
+      copy: "Copy",
+      copied: "Copied",
       calendar: "Add to calendar",
       pdf: "Download PDF",
       preparing: "Preparing …",

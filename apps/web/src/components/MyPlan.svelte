@@ -26,7 +26,20 @@
   let busy = $state<"" | "ics" | "pdf">("");
   let exportError = $state(false);
 
-  const planUrl = location.href.split("#")[0]!;
+  // Čista povezava do načrta (brez ?paid=1), ista v PDF, koledarju in polju za kopiranje.
+  const planUrl = `${location.origin}${location.pathname}?t=${encodeURIComponent(token)}`;
+  let copied = $state(false);
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(planUrl);
+    } catch {
+      const el = document.getElementById("plan-link") as HTMLInputElement | null;
+      el?.select();
+      document.execCommand?.("copy");
+    }
+    copied = true;
+    setTimeout(() => (copied = false), 2500);
+  }
   const orderId = token.split(".")[0] ?? "plan";
   const fileBase = () => `finisher-${data!.input.distanceKm}km-${data!.input.raceDate}`;
 
@@ -209,6 +222,15 @@
     <div class="layout">
       <aside class="left">
         <h1>{t.my.title}</h1>
+        <section class="keep" class:fresh={fromCheckout} aria-labelledby="keep-h">
+          <h2 id="keep-h">{t.my.keepTitle}</h2>
+          <p>{t.my.keepText}</p>
+          <div class="keep-row">
+            <input id="plan-link" type="text" readonly value={planUrl} onfocus={(e) => e.currentTarget.select()} aria-label={t.my.keepTitle} />
+            <button type="button" class="btn" onclick={copyLink}>{copied ? t.my.copied : t.my.copy}</button>
+          </div>
+          <p class="small muted">{t.my.keepHelp}</p>
+        </section>
         <Bib
           {lang}
           dist={String(data.input.distanceKm) as DistKey}
@@ -229,7 +251,6 @@
         </div>
         {#if exportError}<p class="msg" role="alert">{t.my.exportFailed}</p>{/if}
         <p class="muted small">{t.my.exportHint}</p>
-        <p class="muted small">{t.my.keepLink}</p>
         <form class="send" onsubmit={(e) => { e.preventDefault(); sendLink(); }}>
           <label class="small" for="send-to">{t.my.sendLabel}</label>
           <div class="send-row">
@@ -567,5 +588,40 @@
   .ok {
     color: var(--ink);
     font-weight: 700;
+  }
+  .keep {
+    margin: 0.75rem 0 1.25rem;
+    padding: 1rem;
+    border: 2px solid var(--line);
+    border-radius: var(--r-ui);
+    background: var(--surface);
+  }
+  .keep.fresh {
+    border-color: var(--bib-blue);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--bib-blue) 18%, transparent);
+  }
+  .keep h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.1rem;
+  }
+  .keep p {
+    margin: 0 0 0.6rem;
+  }
+  .keep-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .keep-row input {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 0.6rem;
+    border: 2px solid var(--line);
+    border-radius: var(--r-ui);
+    background: var(--mist);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.85rem;
   }
 </style>

@@ -7,5 +7,7 @@ declare namespace Cloudflare {
     /** Resend: pošiljanje emailov je vklopljeno, ko sta nastavljena oba */
     RESEND_API_KEY?: string;
     EMAIL_FROM?: string;
+    /** skrbniška stran /skrbnik (vsaj 16 znakov) */
+    ADMIN_KEY?: string;
   }
 }

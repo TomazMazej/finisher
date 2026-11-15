@@ -1,0 +1,22 @@
+---
+import "@fontsource/big-shoulders-display/800";
+import "@fontsource/atkinson-hyperlegible/400";
+import "@fontsource/atkinson-hyperlegible/700";
+import "../styles/global.css";
+import Admin from "../components/Admin.svelte";
+---
+
+<!doctype html>
+<html lang="sl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Skrbnik | Finisher</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <Admin client:only="svelte" />
+  </body>
+</html>

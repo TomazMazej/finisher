@@ -112,7 +112,7 @@ Datoteka `prototype/gel-kalkulator.html`: ena HTML stran, vanilla JS, vse v brsk
 - [ ] Pred prodajo zamenjaj `TOKEN_SECRET` in odstrani stalni kodi MAZEJTEST/TESTMAZEJ (ali jih omeji).
 - [ ] Preizkusi kljukice v PDF (Preview, Chrome, iOS) in uvoz .ics.
 - [ ] Pravne strani naj pregleda pravnik ali računovodja.
-- [ ] Nastavi skrivnost `ADMIN_KEY` v Cloudflare (za /skrbnik).
+- [x] Skrivnost `ADMIN_KEY` je nastavljena, /skrbnik deluje (15. 11.).
 - [ ] Analitika (Cloudflare Web Analytics).
 
 ## 3. Zahteve za pravo različico

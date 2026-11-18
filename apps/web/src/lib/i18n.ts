@@ -64,6 +64,9 @@ type Dict = {
   start: string;
   finish: string;
   buyTitle: string;
+  price: string;
+  priceNote: string;
+  buyBar: string;
   buyItems: string[];
   buyCta: string;
   buyNote: string;
@@ -81,6 +84,11 @@ type Dict = {
     loading: string;
     progress: (done: number, total: number) => string;
     thisWeek: string;
+    weekDone: (d: number, n: number) => string;
+    next: string;
+    today: string;
+    allDoneTitle: string;
+    markDoneShort: string;
     weeksTitle: string;
     weekRange: (from: string, to: string) => string;
     markDone: (what: string) => string;
@@ -108,6 +116,9 @@ type Dict = {
     pdfTitle: (dist: string, time: string) => string;
     pdfMeta: (date: string, pace: string) => string;
     pdfPaces: string;
+    pdfVolume: string;
+    pdfHowTitle: string;
+    pdfHow: string[];
     pdfTickOnline: string;
     pdfGels: string;
     pdfPage: (n: number, of: number) => string;
@@ -188,6 +199,9 @@ export const T: Record<Lang, Dict> = {
     start: "Štart",
     finish: "Cilj",
     buyTitle: "Cel načrt",
+    price: "19,99 €",
+    priceNote: "z DDV, enkratno plačilo",
+    buyBar: "Kupi",
     buyItems: [
       "vsi tedni do tekme s tempom za vsak trening",
       "urnik gelov in vmesni časi",
@@ -242,6 +256,11 @@ export const T: Record<Lang, Dict> = {
       confirming: "Potrjujem plačilo, načrt se odpre v nekaj sekundah …",
       progress: (d, n) => `${d} od ${n} treningov opravljenih`,
       thisWeek: "Ta teden",
+      weekDone: (d, n) => (d === n ? `Opravljeno vse (${n})` : `Opravljeno ${d} od ${n}`),
+      next: "Naslednji trening",
+      today: "Danes",
+      allDoneTitle: "Vsi treningi so opravljeni. Srečno na tekmi!",
+      markDoneShort: "Opravljeno",
       weeksTitle: "Treningi po tednih",
       weekRange: (a, b) => `${a} do ${b}`,
       markDone: (w) => `Označi kot opravljeno: ${w}`,
@@ -276,6 +295,13 @@ export const T: Record<Lang, Dict> = {
       pdfTitle: (d, time) => `${d} v ${time}`,
       pdfMeta: (date, pace) => `Tekma: ${date}   Ciljni tempo: ${pace}/km`,
       pdfPaces: "Tempi",
+      pdfVolume: "Obseg po tednih (km)",
+      pdfHowTitle: "Kako uporabljaš načrt",
+      pdfHow: [
+        "Opravljene treninge obkljukaj tukaj v PDF ali na spletni strani načrta (povezava spodaj).",
+        "Tempi so okvirni. Prilagodi jih vročini, hribom in počutju.",
+        "Zamujenega treninga ne lovi. Nadaljuj z naslednjim po razporedu.",
+      ],
       pdfTickOnline: "Kljukice lahko shranjuješ tudi na spletu:",
       pdfGels: "Geli",
       pdfPage: (n, of) => `${n} / ${of}`,
@@ -352,6 +378,9 @@ export const T: Record<Lang, Dict> = {
     start: "Start",
     finish: "Finish",
     buyTitle: "Full plan",
+    price: "€19.99",
+    priceNote: "incl. VAT, one-time payment",
+    buyBar: "Buy",
     buyItems: [
       "every week to race day with a pace for each run",
       "gel schedule and splits",
@@ -406,6 +435,11 @@ export const T: Record<Lang, Dict> = {
       confirming: "Confirming your payment, your plan opens in a few seconds …",
       progress: (d, n) => `${d} of ${n} runs done`,
       thisWeek: "This week",
+      weekDone: (d, n) => (d === n ? `All done (${n})` : `${d} of ${n} done`),
+      next: "Next run",
+      today: "Today",
+      allDoneTitle: "All runs done. Good luck on race day!",
+      markDoneShort: "Done",
       weeksTitle: "Runs week by week",
       weekRange: (a, b) => `${a} to ${b}`,
       markDone: (w) => `Mark as done: ${w}`,
@@ -440,6 +474,13 @@ export const T: Record<Lang, Dict> = {
       pdfTitle: (d, time) => `${d} in ${time}`,
       pdfMeta: (date, pace) => `Race: ${date}   Goal pace: ${pace}/km`,
       pdfPaces: "Paces",
+      pdfVolume: "Volume by week (km)",
+      pdfHowTitle: "How to use the plan",
+      pdfHow: [
+        "Tick off finished runs here in the PDF or on your plan page (link below).",
+        "Paces are guides. Adjust them for heat, hills and how you feel.",
+        "Don't make up a missed run. Carry on with the next one on the schedule.",
+      ],
       pdfTickOnline: "You can also save ticks online:",
       pdfGels: "Gels",
       pdfPage: (n, of) => `${n} / ${of}`,

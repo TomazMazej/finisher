@@ -144,6 +144,19 @@
   let code = $state("");
   let buying = $state(false);
   let consent = $state(false);
+
+  // Na telefonu je nakup na dnu strani: spodnja vrstica s ceno, dokler okvir za nakup ni viden.
+  let buyEl = $state<HTMLElement | null>(null);
+  let buyVisible = $state(true);
+  $effect(() => {
+    if (!buyEl || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => (buyVisible = !!e?.isIntersecting), { rootMargin: "0px 0px -20% 0px" });
+    io.observe(buyEl);
+    return () => io.disconnect();
+  });
+  function toBuy() {
+    buyEl?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
   let buyError = $state<"" | "INVALID_CODE" | "INVALID_INPUT" | "NETWORK" | "PAYMENT_ERROR" | "PAYMENTS_DISABLED">("");
   try {
     code = localStorage.getItem("promoCode") ?? localStorage.getItem("testCode") ?? "";
@@ -363,8 +376,11 @@
         </section>
       {/if}
 
-      <section class="buy" aria-labelledby="buy-h">
-        <h2 id="buy-h">{t.buyTitle}</h2>
+      <section class="buy" id="kupi" aria-labelledby="buy-h" bind:this={buyEl}>
+        <div class="buy-head">
+          <h2 id="buy-h">{t.buyTitle}</h2>
+          <p class="price">{t.price}<small>{t.priceNote}</small></p>
+        </div>
         <ul>
           {#each t.buyItems as item}<li>{item}</li>{/each}
         </ul>
@@ -395,6 +411,12 @@
       <LegalLinks {lang} />
     </div>
   </div>
+  {#if plan?.ok && !buyVisible}
+    <div class="buybar">
+      <p><b>{t.buyTitle}</b><span>{t.price}</span></p>
+      <button type="button" onclick={toBuy}>{t.buyBar}</button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -707,5 +729,68 @@
   }
   .consent a {
     color: var(--bib-blue);
+  }
+  .buy-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .price {
+    margin: 0;
+    font: 800 2.4rem/1 var(--display);
+    text-align: right;
+  }
+  .price small {
+    display: block;
+    font: 400 0.85rem/1.3 var(--text);
+    color: var(--ink-2);
+  }
+  #kupi {
+    scroll-margin-top: 1rem;
+  }
+  .buybar {
+    display: none;
+  }
+  @media (max-width: 899px) {
+    .buybar {
+      position: fixed;
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: calc(0.75rem + env(safe-area-inset-bottom));
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.6rem 0.6rem 1rem;
+      background: var(--ink);
+      color: var(--mist);
+      border-radius: var(--r-ui);
+      box-shadow: 0 6px 24px rgb(20 33 61 / 0.25);
+    }
+    .buybar p {
+      margin: 0;
+      display: grid;
+      line-height: 1.2;
+    }
+    .buybar span {
+      font: 800 1.3rem/1 var(--display);
+    }
+    .buybar button {
+      min-height: 48px;
+      padding: 0 1.25rem;
+      border: 0;
+      border-radius: calc(var(--r-ui) - 2px);
+      background: var(--bib-blue);
+      color: var(--bib-blue-ink);
+      font: 700 1rem/1 var(--text);
+      cursor: pointer;
+    }
+    .buybar button:focus-visible {
+      outline: 3px solid var(--mist);
+      outline-offset: 2px;
+    }
   }
 </style>

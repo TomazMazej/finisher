@@ -12,6 +12,7 @@
   import { sessionDates } from "@finisher/core/schedule";
   import { download, planIcs } from "../lib/exports";
   import LegalLinks from "./LegalLinks.svelte";
+  import { sessionDetail } from "../lib/session-text";
 
   type DistKey = "10" | "21.0975" | "42.195";
   type Loaded = Extract<FullPlanResponse, { ok: true }>;
@@ -186,6 +187,27 @@
     });
   });
 
+  // Naslednji neopravljen trening od danes naprej (za kartico na vrhu).
+  const todayIso = new Date(today).toISOString().slice(0, 10);
+  const nextRun = $derived.by(() => {
+    if (!data) return null;
+    for (const w of data.weeks) {
+      const ds = sessionDates(w, data.weeks.length, data.input.raceDate, data.planStart);
+      for (let i = 0; i < w.sessions.length; i++) {
+        const key = `w${w.number}s${i + 1}`;
+        if (!done.has(key) && ds[i]! >= todayIso) return { key, week: w.number, s: w.sessions[i]!, date: ds[i]! };
+      }
+    }
+    return null;
+  });
+  const longFmt = $derived(new Intl.DateTimeFormat(t.locale, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }));
+  // Pri daljših načrtih so pretekli in oddaljeni tedni zaprti, odprta sta trenutni in naslednji.
+  const isCollapsed = (k: number) => {
+    if (!data || data.weeks.length <= 4) return false;
+    const c = Math.max(0, currentWeek);
+    return k < c || k > c + 1;
+  };
+
   const fuel = $derived(
     data ? fuelPlan({ distanceKm: data.input.distanceKm, targetMinutes: data.input.targetMinutes, ...data.input.fuel }) : null,
   );
@@ -222,15 +244,7 @@
     <div class="layout">
       <aside class="left">
         <h1>{t.my.title}</h1>
-        <section class="keep" class:fresh={fromCheckout} aria-labelledby="keep-h">
-          <h2 id="keep-h">{t.my.keepTitle}</h2>
-          <p>{t.my.keepText}</p>
-          <div class="keep-row">
-            <input id="plan-link" type="text" readonly value={planUrl} onfocus={(e) => e.currentTarget.select()} aria-label={t.my.keepTitle} />
-            <button type="button" class="btn" onclick={copyLink}>{copied ? t.my.copied : t.my.copy}</button>
-          </div>
-          <p class="small muted">{t.my.keepHelp}</p>
-        </section>
+        {#if fromCheckout}{@render keepBox()}{/if}
         <Bib
           {lang}
           dist={String(data.input.distanceKm) as DistKey}
@@ -239,6 +253,28 @@
           weeks={data.weeks.length - Math.max(0, currentWeek)}
           predicted={data.predictedMinutes}
         />
+        {#if nextRun}
+          {@const s = nextRun.s}
+          <section class="next s-{s.type}" aria-labelledby="next-h">
+            <p id="next-h" class="next-label">
+              {nextRun.date === todayIso ? t.my.today : t.my.next}
+              <span>{longFmt.format(new Date(nextRun.date + "T00:00:00Z"))}</span>
+            </p>
+            <div class="next-main">
+              <div>
+                <p class="next-name">{t.sessions[s.type]}</p>
+                {#each sessionDetail(t, s) as line}<p class="next-detail">{line}</p>{/each}
+              </div>
+              <p class="next-km">{formatKm(s.km, lang)}<small> km</small></p>
+            </div>
+            <label class="next-done">
+              <input type="checkbox" onchange={(e) => toggle(nextRun.key, (e.currentTarget as HTMLInputElement).checked)} />
+              {t.my.markDoneShort}
+            </label>
+          </section>
+        {:else if totalRuns && doneRuns === totalRuns}
+          <p class="next all">{t.my.allDoneTitle}</p>
+        {/if}
         <div class="progress" aria-live="polite">
           <div class="bar" style:--p="{totalRuns ? (doneRuns / totalRuns) * 100 : 0}%"></div>
           <p>{t.my.progress(doneRuns, totalRuns)}</p>
@@ -251,6 +287,7 @@
         </div>
         {#if exportError}<p class="msg" role="alert">{t.my.exportFailed}</p>{/if}
         <p class="muted small">{t.my.exportHint}</p>
+        {#if !fromCheckout}{@render keepBox()}{/if}
         {#if data.emailEnabled}
         <form class="send" onsubmit={(e) => { e.preventDefault(); sendLink(); }}>
           <label class="small" for="send-to">{t.my.sendLabel}</label>
@@ -279,6 +316,7 @@
                 {week}
                 range={t.my.weekRange(fmt.format(span.start), fmt.format(span.end))}
                 current={k === currentWeek}
+                collapsed={isCollapsed(k)}
                 dates={sessionDates(week, data.weeks.length, data.input.raceDate, data.planStart)}
                 {done}
                 onToggle={toggle}
@@ -297,7 +335,9 @@
                 {#if fuel.intervalMin}<span>{t.every(Math.round(fuel.intervalMin))}</span>{/if}
                 <span>{t.carbsTotal(Math.round(fuel.totalCarbs))}</span>
               </p>
-              <FuelLine {lang} gels={fuel.gels} distanceKm={data.input.distanceKm} targetMinutes={data.input.targetMinutes} />
+              <div class="fuel-wrap">
+                <FuelLine {lang} gels={fuel.gels} distanceKm={data.input.distanceKm} targetMinutes={data.input.targetMinutes} />
+              </div>
             {/if}
             <h3>{t.my.splits}</h3>
             <table class="splits">
@@ -351,6 +391,18 @@
     </div>
   {/if}
 </div>
+
+{#snippet keepBox()}
+  <section class="keep" class:fresh={fromCheckout} aria-labelledby="keep-h">
+    <h2 id="keep-h">{t.my.keepTitle}</h2>
+    <p>{t.my.keepText}</p>
+    <div class="keep-row">
+      <input id="plan-link" type="text" readonly value={planUrl} onfocus={(e) => e.currentTarget.select()} aria-label={t.my.keepTitle} />
+      <button type="button" class="btn" onclick={copyLink}>{copied ? t.my.copied : t.my.copy}</button>
+    </div>
+    <p class="small muted">{t.my.keepHelp}</p>
+  </section>
+{/snippet}
 
 <style>
   .page {
@@ -625,5 +677,82 @@
     color: var(--ink);
     font: inherit;
     font-size: 0.85rem;
+  }
+  .next {
+    margin-top: 1.25rem;
+    padding: 0.9rem 1rem 0.8rem;
+    background: var(--surface);
+    border-radius: var(--r-ui);
+    border-left: 6px solid var(--c, var(--bib-blue));
+  }
+  .next.all {
+    font-weight: 700;
+    --c: var(--s-race);
+  }
+  .next.s-easy {
+    --c: var(--s-easy);
+  }
+  .next.s-tempo {
+    --c: var(--s-tempo);
+  }
+  .next.s-intervals {
+    --c: var(--s-intervals);
+  }
+  .next.s-long {
+    --c: var(--s-long);
+  }
+  .next.s-race {
+    --c: var(--s-race);
+  }
+  .next-label {
+    margin: 0;
+    font-weight: 700;
+    color: var(--bib-blue);
+  }
+  .next-label span {
+    display: block;
+    font-weight: 400;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+  }
+  .next-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin: 0.5rem 0 0.4rem;
+  }
+  .next-name {
+    margin: 0;
+    font: 800 1.5rem/1.1 var(--display);
+  }
+  .next-detail {
+    margin: 0.15rem 0 0;
+    font-size: 0.95rem;
+  }
+  .next-km {
+    margin: 0;
+    flex: none;
+    font: 800 2.4rem/1 var(--display);
+  }
+  .next-km small {
+    font-size: 1rem;
+  }
+  .next-done {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .next-done input {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    accent-color: var(--bib-blue);
+  }
+  .fuel-wrap {
+    max-width: 34rem;
   }
 </style>

@@ -56,17 +56,36 @@ export async function buildPlanPdf(plan: FullPlan, lang: Lang, done: Set<string>
   const t = T[lang];
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const [regBytes, boldBytes, dispBytes] = await Promise.all([
+  const [regBytes, boldBytes, dispBytes, dispExtBytes] = await Promise.all([
     loadFont("/fonts/AtkinsonHyperlegible-Regular.ttf"),
     loadFont("/fonts/AtkinsonHyperlegible-Bold.ttf"),
     loadFont("/fonts/BigShouldersDisplay-ExtraBold-latin.woff"),
+    loadFont("/fonts/BigShouldersDisplay-ExtraBold-latin-ext.woff"),
   ]);
   const reg = await doc.embedFont(regBytes, { subset: true });
   const bold = await doc.embedFont(boldBytes, { subset: true });
-  const display = await doc.embedFont(dispBytes, { subset: true });
-  // Pisava za številke ima samo osnovno latinico; za besedilo s šumniki uporabi krepko Atkinson.
-  const dispChars = new Set(display.getCharacterSet());
-  const df = (str: string) => ([...str].every((c) => dispChars.has(c.codePointAt(0)!)) ? display : bold);
+  const displayLatin = await doc.embedFont(dispBytes, { subset: true });
+  const displayExt = await doc.embedFont(dispExtBytes, { subset: true });
+  // Big Shoulders je razdeljen na osnovno latinico in razširjeno (šumniki). Besedilo se izriše po kosih
+  // z ustrezno datoteko; znak, ki ga ni v nobeni, gre v krepko Atkinson.
+  const latinChars = new Set(displayLatin.getCharacterSet());
+  const extChars = new Set(displayExt.getCharacterSet());
+  const runs = (str: string): [PDFFont, string][] => {
+    const out: [PDFFont, string][] = [];
+    for (const ch of str) {
+      const cp = ch.codePointAt(0)!;
+      const f = latinChars.has(cp) ? displayLatin : extChars.has(cp) ? displayExt : bold;
+      const last = out[out.length - 1];
+      if (last && last[0] === f) last[1] += ch;
+      else out.push([f, ch]);
+    }
+    return out;
+  };
+  // Navidezna pisava: txt() in right() jo izrišeta po kosih.
+  const display = {
+    widthOfTextAtSize: (str: string, size: number) => runs(str).reduce((a, [f, s]) => a + f.widthOfTextAtSize(s, size), 0),
+  } as unknown as PDFFont;
+  const df = (_str: string) => display;
 
   const form = doc.getForm();
   const input = plan.input;
@@ -95,8 +114,14 @@ export async function buildPlanPdf(plan: FullPlan, lang: Lang, done: Set<string>
   const ensure = (h: number) => {
     if (y - h < BOTTOM) newPage();
   };
-  const txt = (str: string, x: number, yy: number, size: number, font: PDFFont = reg, color: RGB = INK) =>
-    page.drawText(str, { x, y: yy, size, font, color });
+  const txt = (str: string, x: number, yy: number, size: number, font: PDFFont = reg, color: RGB = INK) => {
+    if (font !== display) return page.drawText(str, { x, y: yy, size, font, color });
+    let xx = x;
+    for (const [f, s] of runs(str)) {
+      page.drawText(s, { x: xx, y: yy, size, font: f, color });
+      xx += f.widthOfTextAtSize(s, size);
+    }
+  };
   const right = (str: string, xr: number, yy: number, size: number, font: PDFFont = reg, color: RGB = INK) =>
     txt(str, xr - font.widthOfTextAtSize(str, size), yy, size, font, color);
   const roundRect = (x: number, yTop: number, w: number, h: number, r: number, color: RGB, topOnly = false) => {
@@ -120,7 +145,7 @@ export async function buildPlanPdf(plan: FullPlan, lang: Lang, done: Set<string>
 
   // ---------- Naslovnica: startna številka ----------
   page = doc.addPage(A4);
-  const mistH = 470;
+  const mistH = 420;
   page.drawRectangle({ x: 0, y: PH - mistH, width: PW, height: mistH, color: MIST });
 
   const bx = M + 34;
@@ -204,7 +229,58 @@ export async function buildPlanPdf(plan: FullPlan, lang: Lang, done: Set<string>
       yy -= 14;
       txt(l, M + 14, yy, 10, reg, AMBER);
     }
-    y -= h;
+    y -= h + 22;
+  }
+
+  // Obseg po tednih (stolpci kot na spletu) in kratka navodila, če je prostor na naslovnici.
+  const n = plan.weeks.length;
+  const chartH = 78;
+  if (y - (chartH + 70) > BOTTOM) {
+    txt(t.my.pdfVolume, M, y, 12, bold);
+    y -= 14;
+    const peak = Math.max(...plan.weeks.map((w) => w.totalKm), 1);
+    const gapB = n > 14 ? 3 : 5;
+    const bw = (W - gapB * (n - 1)) / n;
+    const base = y - chartH;
+    const KIND_COLOR: Record<string, RGB> = { build: BLUE, recovery: MIST_DARK, taper: LINE, race: TYPE_COLOR.race };
+    plan.weeks.forEach((w, i) => {
+      const h = Math.max(3, (w.totalKm / peak) * (chartH - 14));
+      const x = M + i * (bw + gapB);
+      page.drawRectangle({ x, y: base, width: bw, height: h, color: KIND_COLOR[w.kind] ?? BLUE });
+      if (i === plan.weeks.findIndex((x) => x.totalKm === peak) || i === n - 1) {
+        const lab = formatKm(w.totalKm, lang);
+        txt(lab, x + bw / 2 - df(lab).widthOfTextAtSize(lab, 10) / 2, base + h + 3, 10, df(lab));
+      }
+      if (n <= 12 || i % 2 === 0 || i === n - 1) {
+        const num = String(w.number);
+        txt(num, x + bw / 2 - reg.widthOfTextAtSize(num, 7.5) / 2, base - 10, 7.5, reg, MUTE);
+      }
+    });
+    page.drawLine({ start: { x: M, y: base }, end: { x: M + W, y: base }, thickness: 1, color: INK });
+    // legenda
+    let lx = M;
+    const ly = base - 26;
+    for (const k of ["build", "recovery", "taper", "race"] as const) {
+      if (!plan.weeks.some((w) => w.kind === k)) continue;
+      page.drawRectangle({ x: lx, y: ly - 1, width: 9, height: 9, color: KIND_COLOR[k]! });
+      const lab = t.kinds[k];
+      txt(lab, lx + 13, ly, 8.5, reg, MUTE);
+      lx += 13 + reg.widthOfTextAtSize(lab, 8.5) + 16;
+    }
+    y = ly - 26;
+  }
+  const how = t.my.pdfHow;
+  const howLines = how.flatMap((l) => wrap(`•  ${l}`, reg, 9.5, W - 28));
+  const howH = 30 + howLines.length * 13;
+  if (y - howH > BOTTOM) {
+    page.drawRectangle({ x: M, y: y - howH, width: W, height: howH, color: MIST });
+    let yy = y - 18;
+    txt(t.my.pdfHowTitle, M + 14, yy, 11, bold);
+    for (const l of howLines) {
+      yy -= 13;
+      txt(l, M + 14, yy, 9.5, reg);
+    }
+    y -= howH;
   }
 
   // ---------- Tedni ----------
@@ -339,10 +415,15 @@ export async function buildPlanPdf(plan: FullPlan, lang: Lang, done: Set<string>
   }
 
   // ---------- Kontrolni seznam ----------
+  // Ves seznam na eni strani, če gre; sicer vsaj vsaka skupina skupaj.
+  const groupH = (items: readonly string[]) =>
+    26 + 8 + items.reduce((a, it) => a + wrap(it, reg, 10.5, W - 34).length * 13.5 + 6, 0);
+  const allH = 70 + CHECKLIST[lang].reduce((a, g) => a + groupH(g.items), 0);
+  if (y - allH < BOTTOM && allH < TOP - BOTTOM) newPage();
   heading(t.my.checklistTitle, 80);
   let ci = 0;
   for (const g of CHECKLIST[lang]) {
-    ensure(46);
+    ensure(Math.min(groupH(g.items), TOP - BOTTOM));
     page.drawRectangle({ x: M, y: y - 6, width: W, height: 22, color: MIST });
     txt(g.title, M + 10, y + 1, 11.5, bold);
     y -= 26;
@@ -371,7 +452,7 @@ export async function buildPlanPdf(plan: FullPlan, lang: Lang, done: Set<string>
   const pages = doc.getPages();
   pages.forEach((pg, i) => {
     if (i > 0) {
-      pg.drawText("FINISHER", { x: M, y: PH - 40, size: 13, font: display, color: BLUE });
+      pg.drawText("FINISHER", { x: M, y: PH - 40, size: 13, font: displayLatin, color: BLUE });
       const h = `${title}  |  ${dateFmt.format(d(input.raceDate))}`;
       pg.drawText(h, { x: PW - M - reg.widthOfTextAtSize(h, 9), y: PH - 39, size: 9, font: reg, color: MUTE });
       pg.drawLine({ start: { x: M, y: PH - 48 }, end: { x: PW - M, y: PH - 48 }, thickness: 0.5, color: LINE });

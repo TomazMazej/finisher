@@ -12,6 +12,7 @@
     done = null,
     onToggle = undefined,
     dates = null,
+    collapsed = false,
   }: {
     lang: Lang;
     week: Week;
@@ -23,7 +24,14 @@
     onToggle?: (item: string, value: boolean) => void;
     /** datum vsake seanse (YYYY-MM-DD), če je razpored znan */
     dates?: string[] | null;
+    /** začetno zaprt teden (na strani "moj načrt" pretekli in oddaljeni tedni) */
+    collapsed?: boolean;
   } = $props();
+
+  // svelte-ignore state_referenced_locally
+  let open = $state(!collapsed);
+  const doneCount = $derived(done ? week.sessions.filter((_, i) => done!.has(`w${week.number}s${i + 1}`)).length : 0);
+  const allDone = $derived(!!done && doneCount === week.sessions.length);
 
   const t = $derived(T[lang]);
   const dayFmt = $derived(
@@ -33,13 +41,28 @@
   const itemKey = (i: number) => `w${week.number}s${i + 1}`;
 </script>
 
-<article class="week" class:current id="teden-{week.number}" aria-current={current ? "date" : undefined}>
+<article class="week" class:current class:closed={!open} id="teden-{week.number}" aria-current={current ? "date" : undefined}>
   <header>
-    <h3>{t.week(week.number)}</h3>
+    <h3>
+      {#if collapsed}
+        <button type="button" class="toggle" aria-expanded={open} onclick={() => (open = !open)}>
+          {t.week(week.number)}
+          <svg class="chev" class:up={open} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      {:else}
+        {t.week(week.number)}
+      {/if}
+    </h3>
     <span class="kind">{t.kinds[week.kind]}</span>
     <span class="total">{formatKm(week.totalKm, lang)} km</span>
     {#if range}<span class="range">{current ? `${t.my.thisWeek}, ` : ""}{range}</span>{/if}
+    {#if done && (open || doneCount > 0)}
+      <span class="count" class:all={allDone}>{t.my.weekDone(doneCount, week.sessions.length)}</span>
+    {/if}
   </header>
+  {#if open}
   <ol>
     {#each week.sessions as s, i}
       {@const key = itemKey(i)}
@@ -67,6 +90,7 @@
       </li>
     {/each}
   </ol>
+  {/if}
 </article>
 
 <style>
@@ -95,6 +119,70 @@
   .total {
     margin-left: auto;
     font: 700 1.3rem/1 var(--display);
+  }
+  .toggle {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .toggle:focus-visible {
+    outline: 3px solid var(--bib-blue);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .chev {
+    transition: transform 0.15s ease;
+  }
+  .chev.up {
+    transform: rotate(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chev {
+      transition: none;
+    }
+  }
+  .closed {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+  .closed header {
+    margin-bottom: 0;
+  }
+  .closed h3 {
+    font-size: 1.3rem;
+  }
+  .closed .total {
+    font-size: 1.1rem;
+  }
+  .closed header {
+    align-items: center;
+  }
+  .closed .kind {
+    display: none;
+  }
+  .closed .range,
+  .closed .count {
+    flex-basis: auto;
+    order: 1;
+    font-size: 0.85rem;
+  }
+  .closed .total {
+    order: 2;
+  }
+  .closed .count::before {
+    content: "· ";
+  }
+  .count {
+    flex-basis: 100%;
+    font-size: 0.85rem;
+    color: var(--ink-2);
+  }
+  .count.all {
+    color: var(--ink);
+    font-weight: 700;
   }
   .range {
     flex-basis: 100%;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fuelPlan, splits } from "@finisher/core/fuel";
+  import { fuelPlan, splits, FUEL_DEFAULTS } from "@finisher/core/fuel";
   import { formatDuration, formatKm } from "@finisher/core/format";
   import type { Lang } from "@finisher/core";
   import { T } from "../lib/i18n";
@@ -331,6 +331,7 @@
                 <FuelLine {lang} gels={fuel.gels} distanceKm={data.input.distanceKm} targetMinutes={data.input.targetMinutes} />
               </div>
             {/if}
+            <p class="fuel-basis">{t.fuelBasis(fuel.gelCarbs, data.input.fuel?.carbsPerHour ?? FUEL_DEFAULTS.carbsPerHour, data.input.fuel?.drinkPerHour ?? FUEL_DEFAULTS.drinkPerHour)}</p>
             <h3>{t.my.splits}</h3>
             <table class="splits">
               <tbody>
@@ -527,6 +528,11 @@
   .small {
     font-size: 0.9rem;
     max-width: 70ch;
+  }
+  .fuel-basis {
+    font-size: 0.9rem;
+    color: var(--ink-2);
+    margin: 0.6rem 0 1rem;
   }
   .fuel-sum {
     display: flex;

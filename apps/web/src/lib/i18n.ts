@@ -61,6 +61,7 @@ type Dict = {
   gels: (n: number) => string;
   carbsTotal: (g: number) => string;
   every: (min: number) => string;
+  fuelBasis: (gel: number, perHour: number, drink: number) => string;
   start: string;
   finish: string;
   buyTitle: string;
@@ -196,6 +197,8 @@ export const T: Record<Lang, Dict> = {
     gels: (n) => `${n} ${sl(n, "gel", "gela", "geli", "gelov")}`,
     carbsTotal: (g) => `${g} g ogljikovih hidratov skupaj`,
     every: (min) => `vsakih ${min} min`,
+    fuelBasis: (gel, perHour, drink) =>
+      `Računano za gel s ${gel} g ogljikovih hidratov in cilj ${perHour} g na uro, od tega ${drink} g iz pijače.`,
     start: "Štart",
     finish: "Cilj",
     buyTitle: "Cel načrt",
@@ -375,6 +378,8 @@ export const T: Record<Lang, Dict> = {
     gels: (n) => (n === 1 ? "1 gel" : `${n} gels`),
     carbsTotal: (g) => `${g} g of carbs in total`,
     every: (min) => `every ${min} min`,
+    fuelBasis: (gel, perHour, drink) =>
+      `Based on gels with ${gel} g of carbs and a target of ${perHour} g per hour, ${drink} g of it from your drink.`,
     start: "Start",
     finish: "Finish",
     buyTitle: "Full plan",

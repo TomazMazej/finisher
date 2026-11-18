@@ -364,6 +364,7 @@
             </p>
             <FuelLine {lang} gels={fuel.gels} {distanceKm} {targetMinutes} />
           {/if}
+          <p class="fuel-basis">{t.fuelBasis(fuel.gelCarbs, Number(carbs), Number(drink))}</p>
           <details class="fuel-set">
             <summary>{t.fuelSettings}</summary>
             <div class="grid">
@@ -641,6 +642,11 @@
   }
   .fuel-sum span {
     color: var(--ink-2);
+  }
+  .fuel-basis {
+    font-size: 0.9rem;
+    color: var(--ink-2);
+    margin-top: 0.6rem;
   }
   .fuel-set {
     margin-top: 0.75rem;

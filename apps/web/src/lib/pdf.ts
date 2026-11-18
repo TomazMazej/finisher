@@ -2,7 +2,7 @@
 // Ključi polj so enaki kot na spletu (w3s2, c4), da se kljukice ob prenosu prenesejo.
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import { fuelPlan, splits } from "@finisher/core/fuel";
+import { fuelPlan, splits, FUEL_DEFAULTS } from "@finisher/core/fuel";
 import { sessionDates, weekRange } from "@finisher/core/schedule";
 import { formatDuration, formatKm, formatPace } from "@finisher/core/format";
 import { weeksUntil } from "@finisher/core/dates";
@@ -339,7 +339,9 @@ export async function buildPlanPdf(plan: FullPlan, lang: Lang, done: Set<string>
     if (fuel.gels.length) {
       const sum = `${t.gels(fuel.gels.length)}${fuel.intervalMin ? `, ${t.every(Math.round(fuel.intervalMin))}` : ""}, ${t.carbsTotal(Math.round(fuel.totalCarbs))}`;
       txt(sum, M, y, 11, reg);
-      y -= 58;
+      y -= 14;
+      txt(t.fuelBasis(fuel.gelCarbs, input.fuel?.carbsPerHour ?? FUEL_DEFAULTS.carbsPerHour, input.fuel?.drinkPerHour ?? FUEL_DEFAULTS.drinkPerHour), M, y, 8.5, reg, MUTE);
+      y -= 44;
       // Časovnica: štart, geli, cilj
       const lx = M + 8;
       const lw = W - 16;

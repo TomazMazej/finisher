@@ -3,6 +3,7 @@ import { env } from "cloudflare:workers";
 import { generatePlan } from "@finisher/core";
 import { verifyToken } from "../../lib/server/token";
 import { getDone, getOrder, logEvent, parseInput } from "../../lib/server/orders";
+import { emailEnabled } from "../../lib/server/email";
 import { json } from "../../lib/server/http";
 
 export const prerender = false;
@@ -39,5 +40,6 @@ export const GET: APIRoute = async ({ url }) => {
     ...(plan.predictedMinutes ? { predictedMinutes: plan.predictedMinutes } : {}),
     done,
     ...(order.email ? { email: order.email } : {}),
+    emailEnabled: emailEnabled(env),
   });
 };

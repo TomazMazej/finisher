@@ -60,6 +60,8 @@ export type FullPlanResponse =
       done: string[];
       /** email iz plačila, če obstaja */
       email?: string;
+      /** pošiljanje povezave po emailu je vklopljeno */
+      emailEnabled?: boolean;
     }
   | { ok: false; error: "INVALID_TOKEN" | "NOT_PAID" | "NOT_FOUND" | "PLAN_ERROR" | "NETWORK" };
 

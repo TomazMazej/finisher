@@ -251,6 +251,7 @@
         </div>
         {#if exportError}<p class="msg" role="alert">{t.my.exportFailed}</p>{/if}
         <p class="muted small">{t.my.exportHint}</p>
+        {#if data.emailEnabled}
         <form class="send" onsubmit={(e) => { e.preventDefault(); sendLink(); }}>
           <label class="small" for="send-to">{t.my.sendLabel}</label>
           <div class="send-row">
@@ -261,6 +262,7 @@
             <p class={sendState === "SENT" ? "ok small" : "msg"} role="status">{t.my.sendResult[sendState]}</p>
           {/if}
         </form>
+        {/if}
       </aside>
 
       <main class="right">

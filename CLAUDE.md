@@ -109,7 +109,8 @@ Datoteka `prototype/gel-kalkulator.html`: ena HTML stran, vanilla JS, vse v brsk
 - [ ] (Odloženo, dokler poskus ne pokaže prodaje.) Kupi domeno in jo poveži z workerjem na Cloudflaru.
 - [ ] (Po nakupu domene; alternativa brez domene je Brevo z naslovom Gmail, slabša dostavljivost.) Vklopi pošiljanje emailov: Resend račun, potrdi domeno (DNS), skrivnost `RESEND_API_KEY` in spremenljivka `EMAIL_FROM` (npr. `Finisher <nacrt@domena>`). Preizkusi email po nakupu in gumb na strani "moj načrt".
 - [x] Živi način v Stripu (18. 11.): račun potrjen, izdelek, cena in webhook. Uporabnik v Cloudflare nastavi živa ključa `sk_live_` in `whsec_`, nato preizkus z nakupom in vračilom.
-- [ ] Pred prodajo zamenjaj `TOKEN_SECRET` in odstrani stalni kodi MAZEJTEST/TESTMAZEJ (ali jih omeji).
+- [x] `TOKEN_SECRET` zamenjan (18. 11.), živa Stripe ključa nastavljena. Kodi MAZEJTEST/TESTMAZEJ uporabnik obdrži za predstavitve (odvisni le od SHA-256 v kodi).
+- [ ] Preizkus živega nakupa s svojo kartico in vračilo v Stripu.
 - [ ] Preizkusi kljukice v PDF (Preview, Chrome, iOS) in uvoz .ics.
 - [ ] Pravne strani naj pregleda pravnik ali računovodja.
 - [x] Skrivnost `ADMIN_KEY` je nastavljena, /skrbnik deluje (15. 11.).

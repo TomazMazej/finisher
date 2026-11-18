@@ -217,14 +217,6 @@
     return CHECKLIST[lang].map((g) => ({ title: g.title, items: g.items.map((text) => ({ text, key: `c${i++}` })) }));
   });
 
-  // Ob prvem nalaganju skoči na trenutni teden.
-  let scrolled = false;
-  $effect(() => {
-    if (!scrolled && data && currentWeek > 0) {
-      scrolled = true;
-      requestAnimationFrame(() => document.getElementById(`teden-${data!.weeks[currentWeek]!.number}`)?.scrollIntoView());
-    }
-  });
 </script>
 
 <div class="page">
@@ -452,10 +444,6 @@
       grid-template-columns: minmax(340px, 400px) 1fr;
       gap: 3.5rem;
       align-items: start;
-    }
-    .left {
-      position: sticky;
-      top: 1rem;
     }
   }
   .right {

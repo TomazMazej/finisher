@@ -4,10 +4,10 @@
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  // ID cene ni skrivnost. Testni način; za živi način zamenjaj z živim price_...
+  // ID cene ni skrivnost. Živi način (račun Mazej-development); testna cena je bila price_1Ub0g2FKWUikEeWoXtWWEOzF
   // spremenljivke, dodane v nadzorni plošči, ob objavi ostanejo
   "keep_vars": true,
-  "vars": { "STRIPE_PRICE_ID": "price_1Ub0g2FKWUikEeWoXtWWEOzF" },
+  "vars": { "STRIPE_PRICE_ID": "price_1UdEU1F3c1IyjCTWXMFrqy20" },
   "d1_databases": [
     {
       "binding": "DB",
